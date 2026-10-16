@@ -2,6 +2,24 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [v0.4.0] — Project Markers Detection (2026-10-16)
+
+### Added
+- **Project Markers Detection Helper (`lib/project_markers.py`)**:
+  - Cold-path Python detector identifying project types and recommended command recipes.
+  - Ecosystem support: Python (`pyproject.toml`, `requirements.txt`), Node (`package.json`), Rust (`Cargo.toml`), Go (`go.mod`), Ruby (`Gemfile`), PHP (`composer.json`), Make (`Makefile`), Docker (`docker-compose.yml`, `Dockerfile`), just (`justfile`), and Git (`.git`).
+  - Strict cold-path isolation: never invoked during hot-path shell startup.
+- **Project Suggestion Source (`sources/project.source.zsh`)**:
+  - Registered IOP source with kind `project` and weight 50.
+  - Dual-tier caching: in-memory cache + persistent per-directory disk cache (`~/.cache/ziro/ghost/project-cache/*.json`).
+  - Automatic cache invalidation based on marker file modification time (`mtime`).
+- **ZLE Lifecycle Integration (`core/ghost-core.zsh`)**:
+  - Added `_ghost_on_chpwd` hook attached to `chpwd` to instantly clear in-memory project caches when switching directories.
+- **Automated Test Suites**:
+  - `tests/test_project_markers.zsh`: 5 test cases verifying multi-language marker detection and empty directory handling.
+  - `tests/test_project_cache.zsh`: 4 test cases testing cache creation, cache hits without Python re-execution, `chpwd` invalidation, and mtime refresh.
+  - `tests/test_project_source.zsh`: 3 test cases testing IOP registration, prefix filtering, and result formatting.
+
 ## [v0.3.0] — Popup Menu, Tab Navigation & Quality Fixes (2026-10-16)
 
 ### Added

@@ -145,6 +145,15 @@ _ghost_popup() {
   fi
 }
 
+# Directory change hook: invalidate directory-scoped caches
+_ghost_on_chpwd() {
+  emulate -L zsh
+  typeset -gA _ghost_project_mem_cache
+  _ghost_project_mem_cache=()
+  typeset -gA _ghost_project_commands_cache
+  _ghost_project_commands_cache=()
+}
+
 # Boot and bind ZLE widgets
 _ghost_boot() {
   emulate -L zsh
@@ -154,6 +163,11 @@ _ghost_boot() {
 
   autoload -Uz add-zsh-hook 2>/dev/null || true
   autoload -Uz add-zle-hook-widget 2>/dev/null || true
+
+  # Register chpwd hook
+  if (( ${+functions[add-zsh-hook]} )); then
+    add-zsh-hook chpwd _ghost_on_chpwd
+  fi
 
   # Register widgets
   zle -N ghost-accept-full _ghost_accept_full
