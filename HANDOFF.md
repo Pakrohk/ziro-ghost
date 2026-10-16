@@ -10,8 +10,8 @@ Generated: 2026-10-16
 - **Principle**: Principle XIV (Plugin Sovereignty — fully decoupled standalone repository)
 
 ## Current Version
-- **Latest**: v0.9.0 (this milestone)
-- **Previous**: v0.8.0 (preview pane, docs window, contract safety)
+- **Latest**: v1.0.0 (STABLE)
+- **Previous**: v0.9.0 (loading indicator, zoxide integration, benchmarks)
 
 ## Roadmap
 | Version | Content | Status |
@@ -23,8 +23,8 @@ Generated: 2026-10-16
 | **v0.6.0** | Typo correction engine (Spec 009 R18) | ✅ released |
 | **v0.7.0** | Custom Source API & Safety Guards (Spec 009 R17) | ✅ released |
 | **v0.8.0** | Preview pane + docs window + contract safety | ✅ released |
-| **v0.9.0** | Pure-Zsh Loading Indicator + Zoxide Integration + Benchmarks | ✅ released (this) |
-| **v1.0.0** | Stable — ready for ziro-shell integration | planned (next) |
+| **v0.9.0** | Pure-Zsh Loading Indicator + Zoxide Integration + Benchmarks | ✅ released |
+| **v1.0.0** | Stable Release — ready for ziro-shell integration | ✅ released (this) |
 
 ## Architecture
 - **Entry point**: `ghost.plugin.zsh` (standalone sourceable)
@@ -52,7 +52,14 @@ Generated: 2026-10-16
   - `project_markers.py`: Marker detection helper
   - `docs_extractor.py`: tldr/man/--help doc extractor with 3s timeout and TTL file cache
   - `helpers.zsh`: Shell shortcuts (`j` jump command with fzf preview)
-- **Docs (`docs/`)**: Architecture, kinds, custom sources, preview & docs, loading indicator, and zoxide integration
+- **Docs (`docs/`)**:
+  - `API.md`: Public API stability guarantee (frozen until v2.0.0)
+  - `ARCHITECTURE.md`: Module architecture and lifecycle
+  - `CUSTOM-SOURCES.md`: Custom source developer guide with contract safety
+  - `LOADING-INDICATOR.md`: RPROMPT loading indicator guide
+  - `MIGRATION-v0.x-to-v1.0.md`: Early adopter upgrade guide
+  - `PREVIEW-AND-DOCS.md`: Interactive preview and documentation window
+  - `ZOXIDE-INTEGRATION.md`: Zoxide integration and `j` shortcut
 
 ## Test Status
 - **Suites**: 29 suites
@@ -88,25 +95,21 @@ Generated: 2026-10-16
   - `tests/test_helper_j.zsh`
   - `tests/test_benchmarks.zsh`
 
-## Key Decisions
+## Key Decisions & Standards
+- **Principle XIV (Plugin Sovereignty)**: `ziro-ghost` is completely decoupled and sovereign.
+- **API Stability Freeze**: The public API documented in `docs/API.md` is frozen until v2.0.0.
 - **ADR-006**: Hybrid configuration model (TOML on cold-path, zstyle on hot-path).
 - **ADR-009**: Code style guide — function-based, idiom-first, strict scoping.
 - **Spec 011**: Zsh optimization rules — zero forks on hot path, hoisted modules, pure-Zsh ranking.
 - **Spec 009**: Ghost functional specifications (FR-001 through FR-010, R11 through R18).
-  - R11: Popup menu and preview pane.
-  - R14: Source weights strictly calibrated (history 40, project 30, zoxide 15, subcommand 10, completions 10, typo 5).
-  - R17: Custom Source API with Contract-Based Safety (max_suggestions + timeout_ms) and source stats API.
-  - FR-005 / Spec 011: Pure Zsh loading indicator (zero forks, ~0.1ms overhead, threshold-gated at 200ms).
-  - FR-007: Zoxide frecency integration with directory propositions on `cd`.
-  - FR-009: Documentation window querying tldr/man/--help with cold-path caching.
-  - FR-010: Benchmarks verifying hot-path load < 50ms (measured ~8ms) and query < 10ms (measured ~0.1ms).
 
 ## Cross-Project References
 - **ziro-shell**: https://github.com/Pakrohk/ziro-shell
-- `ziro-ghost` is planned to integrate into `ziro-shell` v1.1.3 after reaching v1.0.0.
+- `ziro-ghost` is ready for native integration into `ziro-shell` v1.1.3.
 
 ## Next Steps
-- **v1.0.0**: Stable Release (Final polish, readiness for ziro-shell v1.1.3 integration).
+- Native integration in `ziro-shell` v1.1.3.
+- Deferred feature: zoxide-project correlation (scheduled for `v1.0.x`).
 
 ## Known Issues
 - None. All 29 test suites passing green; zero forks on hot-path verified.

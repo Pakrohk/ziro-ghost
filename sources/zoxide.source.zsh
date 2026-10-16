@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Zoxide Suggestion Source
-# Layer: Sources · Spec: 009 v0.2.0 (FR-001, FR-007) · Version: 0.9.0
+# Layer: Sources · Spec: 009 v0.2.0 (FR-001, FR-007) · Version: 1.0.0
 # Proposes cd target directories ranked by zoxide frecency database.
 
 # Guard: skip if zoxide is not installed

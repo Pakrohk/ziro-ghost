@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — standalone IDE-like autocomplete for Zsh
-# Version: 0.9.0
+# Version: 1.0.0
 # Repository: https://github.com/Pakrohk/ziro-ghost
 # License: MIT
 #

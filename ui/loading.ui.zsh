@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Pure Zsh Loading Indicator
-# Layer: UI · Spec: 009 v0.2.0 (FR-005, Spec 011) · Version: 0.9.0
+# Layer: UI · Spec: 009 v0.2.0 (FR-005, Spec 011) · Version: 1.0.0
 # Zero forks, pure Zsh spinner for RPROMPT / async queries.
 
 zmodload zsh/datetime 2>/dev/null || true

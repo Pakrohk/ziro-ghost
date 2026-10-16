@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Shell Helpers & Shortcuts
-# Layer: Lib · Spec: 009 v0.2.0 · Version: 0.9.0
+# Layer: Lib · Spec: 009 v0.2.0 · Version: 1.0.0
 
 _ghost_j() {
   emulate -L zsh

@@ -2,6 +2,62 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [1.0.0] — 2026-10-16 — Stable Release
+
+First stable release of `ziro-ghost` — standalone, modular, IDE-like autocomplete for Zsh.
+
+### Features
+
+- **Ghost text**: Instant inline `POSTDISPLAY` suggestions with zero-latency keystroke response.
+- **Popup menu**: Interactive `fzf` candidate exploration with Tab/Shift-Tab navigation and native ZLE menu fallback.
+- **12 Semantic Kinds**: Distinct styling for `git`, `cmd`, `path`, `dir`, `file`, `alias`, `var`, `func`, `history`, `project`, `typo`, and `snippet`.
+- **Icons**: High-definition Nerd Font glyphs with clean ASCII fallbacks for basic TTYs.
+- **Multi-Source Engine**: Calibrated weighted scoring:
+  - `history` (weight 40)
+  - `project` (weight 30)
+  - `zoxide` (weight 15)
+  - `subcommand` (weight 10)
+  - `completions` (weight 10)
+  - `typo` (fallback-only, weight 5)
+- **Project-Aware**: Intelligent recipe and command discovery for Python, Node, Rust, Go, Ruby, PHP, Make, Docker, Just, and Git.
+- **Typo Correction Engine**: Multi-tiered correction using static maps, Damerau transposition, QWERTY keyboard distance, and bounded Levenshtein algorithm.
+- **Custom Source API**: Declarative `[[sources]]` configuration or file-based handlers with contract-based safety (`max_suggestions`, `timeout_ms`).
+- **Preview Pane**: Real-time structured metadata preview (kind, source, weight, frecency) in `fzf` popup.
+- **Docs Window**: Command documentation lookup querying `tldr`, `man -P cat`, or `--help` with 3-second timeout and 24-hour disk cache.
+- **Loading Indicator**: Pure-Zsh zero-fork spinner for `RPROMPT` with 200ms threshold gating.
+- **Zoxide Integration**: Smart directory suggestions on `cd` commands and interactive `j` jump helper shortcut.
+- **Contract-Based Safety**: In-process runtime bounds with zero forks in hot-path.
+- **Source Stats API**: `ghost_source_stats`, `ghost_all_source_stats`, `ghost_source_stats_reset` for runtime observability.
+
+### Configuration
+
+- `~/.config/ziro/ghost.conf` (TOML format) with compiled defaults fallback.
+- Sections: `[ui]`, `[ui.preview]`, `[ui.docs]`, `[ui.loading]`, `[correction]`, `[safety]`, `[[sources]]`.
+
+### Architecture & Standards
+
+- IOP-compliant (Intent-Oriented Programming).
+- Registry pattern for sources, UIs, matchers, and comparators.
+- Fully decoupled: zero dependencies on `ziro-shell`.
+- Complies with Spec 011 Zsh Optimization (zero forks on hot path, hoisted modules).
+
+### Performance Metrics
+
+- Plugin load time: ~8ms (budget < 50ms).
+- History query time: ~0.1ms (budget < 10ms).
+- Zero forks in hot-path.
+
+### Testing & CI
+
+- 29 test suites with 100% pass rate.
+- Cross-platform CI verified on Ubuntu and macOS runners.
+
+### Breaking Changes
+
+None — initial stable release.
+
+---
+
 ## [v0.9.0] — Loading Indicator, Zoxide Integration & Benchmarks (2026-10-16)
 
 ### Added
