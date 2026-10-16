@@ -1,39 +1,80 @@
 #!/usr/bin/env zsh
-# ziro-ghost — Core ZLE Lifecycle, Safety Guards & Engine Coordinator
-# Layer: Core · Spec: 009 v0.2.0 (FR-001, FR-005, R11, R13, R17) · Version: 0.7.0
-# Coordinates ZLE hooks, source querying, timeout safety, ranking, and rendering.
+# ziro-ghost — Core ZLE Lifecycle, Contract Safety & Engine Coordinator
+# Layer: Core · Spec: 009 v0.2.0 (FR-001, FR-005, R11, R13, R17) · Version: 0.8.0
+# Coordinates ZLE hooks, source querying, contract enforcement, ranking, and rendering.
+
+zmodload zsh/datetime 2>/dev/null || true
 
 typeset -g _GHOST_CURRENT_SUGGESTION=""
 typeset -g _GHOST_CURRENT_KIND="cmd"
 
-# Safely invoke a suggestion handler with timeout and error isolation
+# Invoke handler with contract-based safety (zero forks)
+# Contract: max_suggestions + timeout_ms declared per custom source
 _ghost_invoke_handler() {
   emulate -L zsh
-  local handler="$1" query="$2"
-  local -i timeout_ms=50
+  local handler="$1" query="$2" src_name="${3:-$1}"
+
+  local max_sugg=50
+  local -F timeout_ms=50.0
+
   if (( ${+functions[_ghost_config_get]} )); then
     local conf_timeout="$(_ghost_config_get "safety.handler_timeout_ms" "50")"
     (( timeout_ms = conf_timeout > 0 ? conf_timeout : 50 ))
   fi
 
+  if [[ -n "${_ghost_source_contract[$src_name]:-}" ]]; then
+    local contract="${_ghost_source_contract[$src_name]}"
+    max_sugg="${contract%%:*}"
+    timeout_ms="${contract##*:}"
+  fi
+
+  (( max_sugg = max_sugg > 0 ? max_sugg : 50 ))
+  (( timeout_ms = timeout_ms > 0 ? timeout_ms : 50 ))
+
   _ghost_results=()
+  _ghost_result_kinds=()
   local t0=$EPOCHREALTIME
+  local rc=0
 
-  # Execute handler with error isolation (prevent crash from breaking ZLE)
   {
-    $handler "$query" >/dev/null 2>&1
-  } || {
-    return 1
-  }
+    "$handler" "$query" 2>/dev/null
+  } || rc=$?
 
-  local t1=$EPOCHREALTIME
-  local -F elapsed_ms=$(( (t1 - t0) * 1000.0 ))
+  local -F elapsed_ms=$(( (EPOCHREALTIME - t0) * 1000.0 ))
+  local -i elapsed_i=$(( elapsed_ms ))
+
+  # Contract enforcement: timeout
   if (( elapsed_ms > timeout_ms )); then
-    # Timeout exceeded: discard results to keep prompt responsive
+    _ghost_source_stats[$src_name.timeout_violations]=$(( ${_ghost_source_stats[$src_name.timeout_violations]:-0} + 1 ))
     _ghost_results=()
+    _ghost_result_kinds=()
+    # Still record stats for observability
+    _ghost_source_stats[$src_name.calls]=$(( ${_ghost_source_stats[$src_name.calls]:-0} + 1 ))
+    _ghost_source_stats[$src_name.total_ms]=$(( ${_ghost_source_stats[$src_name.total_ms]:-0} + elapsed_i ))
+    _ghost_source_stats[$src_name.last_ms]="$elapsed_i"
+    local prev_max=${_ghost_source_stats[$src_name.max_ms]:-0}
+    (( elapsed_i > prev_max )) && _ghost_source_stats[$src_name.max_ms]="$elapsed_i"
     return 1
   fi
-  return 0
+
+  # Contract enforcement: max suggestions truncation
+  if (( ${#_ghost_results} > max_sugg )); then
+    _ghost_results=("${_ghost_results[@]:0:$max_sugg}")
+    # Keep kinds in sync if handler populated them
+    if (( ${#_ghost_result_kinds} > max_sugg )); then
+      _ghost_result_kinds=("${_ghost_result_kinds[@]:0:$max_sugg}")
+    fi
+    _ghost_source_stats[$src_name.truncations]=$(( ${_ghost_source_stats[$src_name.truncations]:-0} + 1 ))
+  fi
+
+  # Stats tracking
+  _ghost_source_stats[$src_name.calls]=$(( ${_ghost_source_stats[$src_name.calls]:-0} + 1 ))
+  _ghost_source_stats[$src_name.total_ms]=$(( ${_ghost_source_stats[$src_name.total_ms]:-0} + elapsed_i ))
+  _ghost_source_stats[$src_name.last_ms]="$elapsed_i"
+  local prev_max2=${_ghost_source_stats[$src_name.max_ms]:-0}
+  (( elapsed_i > prev_max2 )) && _ghost_source_stats[$src_name.max_ms]="$elapsed_i"
+
+  return $rc
 }
 
 # Query all enabled sources and compute top ranked candidate
@@ -60,7 +101,7 @@ _ghost_compute() {
 
     handler="${_ghost_sources_handler[$src]}"
     if (( ${+functions[$handler]} )); then
-      if _ghost_invoke_handler "$handler" "$query"; then
+      if _ghost_invoke_handler "$handler" "$query" "$src"; then
         if (( ${#_ghost_results} > 0 )); then
           local src_weight="${_ghost_sources_weight[$src]:-10}"
           local src_kind="${_ghost_sources_kind[$src]:-cmd}"
@@ -88,7 +129,7 @@ _ghost_compute() {
 
       handler="${_ghost_sources_handler[$src]}"
       if (( ${+functions[$handler]} )); then
-        if _ghost_invoke_handler "$handler" "$query"; then
+        if _ghost_invoke_handler "$handler" "$query" "$src"; then
           if (( ${#_ghost_results} > 0 )); then
             local src_weight="${_ghost_sources_weight[$src]:-10}"
             local src_kind="${_ghost_sources_kind[$src]:-cmd}"
@@ -202,7 +243,7 @@ _ghost_popup() {
     [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
     handler="${_ghost_sources_handler[$src]}"
     if (( ${+functions[$handler]} )); then
-      if _ghost_invoke_handler "$handler" "$query"; then
+      if _ghost_invoke_handler "$handler" "$query" "$src"; then
         if (( ${#_ghost_results} > 0 )); then
           local src_weight="${_ghost_sources_weight[$src]:-10}"
           local src_kind="${_ghost_sources_kind[$src]:-cmd}"
@@ -229,7 +270,7 @@ _ghost_popup() {
       [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
       handler="${_ghost_sources_handler[$src]}"
       if (( ${+functions[$handler]} )); then
-        if _ghost_invoke_handler "$handler" "$query"; then
+        if _ghost_invoke_handler "$handler" "$query" "$src"; then
           if (( ${#_ghost_results} > 0 )); then
             local src_weight="${_ghost_sources_weight[$src]:-10}"
             local src_kind="${_ghost_sources_kind[$src]:-cmd}"

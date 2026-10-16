@@ -2,6 +2,35 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [v0.8.0] — Contract Safety, Preview Pane & Documentation Window (2026-10-16)
+
+### Added
+- **Contract-Based Safety Enforcement (`core/ghost-registry.zsh`, `core/ghost-core.zsh`)**:
+  - Replaces fork-based timeout with pure-Zsh contract enforcement (Spec 011 zero-forks).
+  - Custom sources declare `max_suggestions` and `timeout_ms` directly in `ghost.conf`.
+  - Missing contract defaults to safe limits (50 suggestions, 100ms) with a warning.
+  - Contract violations handled gracefully: exceeding `timeout_ms` discards candidates, exceeding `max_suggestions` truncates the array.
+  - Structured accountability metrics tracked per source: `calls`, `avg_ms`, `max_ms`, `last_ms`, `timeout_violations`, `truncations`.
+  - New inspection and reset APIs: `ghost_source_stats`, `ghost_all_source_stats`, `ghost_source_stats_reset`.
+- **Interactive Preview Pane (`ui/preview.ui.zsh`, `ui/popup.ui.zsh`)**:
+  - Live metadata preview pane rendered on the right side of `fzf` popup (`Ctrl-G`).
+  - Displays formatted suggestion text, kind badge with icon, origin source, scoring weight, and frecency score.
+  - Layout toggle bound to `Ctrl-/` (cycles through `down:40%`, `right:50%`, and `hidden`).
+  - Configuration section `[ui.preview]` in `ghost.conf`.
+- **Documentation Window (`lib/docs_extractor.py`, `ui/docs.ui.zsh`)**:
+  - Instant command documentation extraction via `Ctrl-D` toggle in the popup menu.
+  - Cold-path Python extractor querying `tldr`, `man -P cat`, or `--help` with strict 3-second timeout.
+  - TTL-based file cache in `~/.cache/ziro/ghost/docs/` with configurable 24-hour expiration (`[ui.docs] cache_ttl = 86400`).
+  - Configuration section `[ui.docs]` in `ghost.conf`.
+- **Developer Guides**:
+  - `docs/PREVIEW-AND-DOCS.md`: Complete guide to preview configuration, keybindings, and documentation window.
+  - `docs/CUSTOM-SOURCES.md`: Updated with contract-based safety guidelines and infinite loop caveats.
+- **Comprehensive Test Suites (25 Suites Total)**:
+  - `tests/test_contract_enforcement.zsh` (6 test cases)
+  - `tests/test_source_stats.zsh` (4 test cases)
+  - `tests/test_preview.zsh` (2 test cases)
+  - `tests/test_docs_extractor.zsh` (4 test cases)
+
 ## [v0.7.0] — Custom Source API & Safety Guards (2026-10-16)
 
 ### Added

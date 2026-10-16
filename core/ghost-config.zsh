@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Configuration Engine
-# Layer: Core · Spec: 009 v0.2.0 (ZR-004, R17) · Version: 0.7.0
+# Layer: Core · Spec: 009 v0.2.0 (ZR-004, R17, FR-009) · Version: 0.8.0
 # Reads TOML config (cold-path) with zstyle & compiled defaults fallback.
 
 typeset -gA _ghost_config_cache
@@ -14,12 +14,18 @@ _ghost_config_load_toml() {
 
   local line key val section="" in_sources=0
   local s_name="" s_handler="" s_weight="20" s_kind="cmd" s_enabled="1" s_fallback="0" s_intent="custom"
+  local s_max_suggestions="" s_timeout_ms=""
 
   _commit_custom_source() {
     if (( in_sources )) && [[ -n "$s_name" && -n "$s_handler" ]]; then
-      _ghost_config_custom_sources+=("${s_name}|${s_handler}|${s_weight}|${s_kind}|${s_enabled}|${s_fallback}|${s_intent}")
+      local entry="${s_name}|${s_handler}|${s_weight}|${s_kind}|${s_enabled}|${s_fallback}|${s_intent}"
+      if [[ -n "$s_max_suggestions" || -n "$s_timeout_ms" ]]; then
+        entry+="|${s_max_suggestions}|${s_timeout_ms}"
+      fi
+      _ghost_config_custom_sources+=("$entry")
     fi
     s_name="" s_handler="" s_weight="20" s_kind="cmd" s_enabled="1" s_fallback="0" s_intent="custom"
+    s_max_suggestions="" s_timeout_ms=""
   }
 
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -57,20 +63,22 @@ _ghost_config_load_toml() {
 
       if (( in_sources )); then
         case "$key" in
-          name)     s_name="$val" ;;
+          name)            s_name="$val" ;;
           handler)
             val="${val/#\~/$HOME}"
             s_handler="$val"
             ;;
-          weight)   s_weight="$val" ;;
-          kind)     s_kind="$val" ;;
+          weight)          s_weight="$val" ;;
+          kind)            s_kind="$val" ;;
           enabled)
             [[ "$val" == "true" || "$val" == "1" ]] && s_enabled="1" || s_enabled="0"
             ;;
           fallback_only)
             [[ "$val" == "true" || "$val" == "1" ]] && s_fallback="1" || s_fallback="0"
             ;;
-          intent)   s_intent="$val" ;;
+          intent)          s_intent="$val" ;;
+          max_suggestions) s_max_suggestions="$val" ;;
+          timeout_ms)      s_timeout_ms="$val" ;;
         esac
       else
         local full_key="$key"
@@ -160,6 +168,19 @@ _ghost_config_init() {
   _ghost_config_cache[correction.keyboard_distance]="true"
   _ghost_config_cache[correction.confidence_threshold]="0.7"
   _ghost_config_cache[safety.handler_timeout_ms]="50"
+
+  # UI Preview & Docs Defaults (v0.8.0 Spec 009 FR-009)
+  _ghost_config_cache[ui.preview.enabled]="true"
+  _ghost_config_cache[ui.preview.layout]="vertical"
+  _ghost_config_cache[ui.preview.show_kind]="true"
+  _ghost_config_cache[ui.preview.show_source]="true"
+  _ghost_config_cache[ui.preview.show_frecency]="true"
+  _ghost_config_cache[ui.preview.show_directory]="false"
+
+  _ghost_config_cache[ui.docs.enabled]="true"
+  _ghost_config_cache[ui.docs.source]="auto"
+  _ghost_config_cache[ui.docs.cache_ttl]="86400"
+  _ghost_config_cache[ui.docs.max_lines]="15"
 
   _ghost_config_custom_sources=()
 

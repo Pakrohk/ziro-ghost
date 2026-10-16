@@ -104,6 +104,39 @@ _ghost_team_ops_query() {
 - **Error Isolation**: Handler syntax errors or runtime crashes are isolated and will not break shell execution or other suggestion providers.
 - **Performance Discipline**: Per Spec 011, custom sources should avoid external subprocess forks (`cat`, `grep`, `sed`, `awk`) during query evaluation.
 
+## Contract-Based Safety (v0.8.0+)
+
+Custom sources declare explicit performance and memory bounds in `ghost.conf`:
+
+```toml
+[[sources]]
+name = "work"
+handler = "_my_work_query"
+# Required contract fields:
+max_suggestions = 10    # upper bound of results
+timeout_ms = 30         # max allowed runtime in ms
+```
+
+### What happens if violated
+
+- **Exceeding `timeout_ms`**: source execution is skipped, candidates discarded, and `timeout_violations` incremented in source stats.
+- **Returning more than `max_suggestions`**: result list is truncated to the declared ceiling, and `truncations` counter incremented.
+- **Missing contract fields**: safe defaults (`50` suggestions, `100ms` timeout) applied automatically with a warning log.
+
+### Debugging & Accountability
+
+Inspect runtime performance and contract violations at any time:
+
+```zsh
+ghost_source_stats work
+ghost_all_source_stats
+ghost_source_stats_reset work
+```
+
+### ⚠️ Infinite loops
+
+This contract uses pure-Zsh in-process timing to maintain zero subprocess forks on the hot path. It does **not** terminate infinite loops. A handler that never returns will block the prompt. **Always ensure your handler terminates in bounded time.**
+
 ## Runtime Management
 
 - Reload custom sources dynamically without restarting the shell:

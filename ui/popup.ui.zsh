@@ -183,6 +183,24 @@ ghost_ui_popup_open() {
     formatted+=("${icon}  ${text}  │ ${kind} │ history"$'\t'"${text}")
   done
 
+  # Determine preview pane configuration
+  local preview_enabled="true"
+  if (( ${+functions[_ghost_config_get]} )); then
+    preview_enabled="$(_ghost_config_get "ui.preview.enabled" "true")"
+  fi
+
+  local mode_file="/tmp/ghost-docs-mode-$$-${RANDOM}"
+  local -a fzf_preview_args=()
+  if [[ "$preview_enabled" == "true" || "$preview_enabled" == "1" ]]; then
+    rm -f "$mode_file" 2>/dev/null || true
+    fzf_preview_args=(
+      --preview "if [[ -f '$mode_file' ]]; then zsh '${GHOST_HOME}/ui/docs.ui.zsh' --render {}; else zsh '${GHOST_HOME}/ui/preview.ui.zsh' --render {}; fi"
+      --preview-window "right:50%:wrap"
+      --bind "ctrl-/:change-preview-window(down:40%:wrap|right:50%:wrap|hidden)"
+      --bind "ctrl-d:execute-silent([[ -f '$mode_file' ]] && rm -f '$mode_file' || touch '$mode_file')+refresh-preview"
+    )
+  fi
+
   # Run fzf with Tab/S-Tab navigation and clear instructions
   local selected
   selected="$(
@@ -190,12 +208,15 @@ ghost_ui_popup_open() {
       --height=40% \
       --reverse \
       --prompt="Ghost> " \
-      --header="Tab: next · S-Tab: prev · Enter: select · Esc: cancel" \
+      --header="Tab: next · S-Tab: prev · Ctrl-D: docs · Ctrl-/: layout · Enter: select · Esc: cancel" \
       --bind="tab:down,btab:up" \
       --with-nth=1 \
       --delimiter=$'\t' \
+      "${fzf_preview_args[@]}" \
       --ansi 2>/dev/null
   )"
+
+  rm -f "$mode_file" 2>/dev/null || true
 
   if [[ -n "$selected" ]]; then
     # Extract exact raw text after the tab character (POP-2)
