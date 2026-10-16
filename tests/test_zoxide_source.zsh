@@ -8,6 +8,16 @@ source "$ROOT_DIR/core/ghost-kinds.zsh"
 source "$ROOT_DIR/core/ghost-registry.zsh"
 source "$ROOT_DIR/core/ghost-config.zsh"
 
+# If zoxide is not installed in the environment (e.g. CI runner), test graceful skip
+if (( ! $+commands[zoxide] )); then
+  # Sourcing zoxide source must not throw
+  source "$ROOT_DIR/sources/zoxide.source.zsh"
+  # Should not register zoxide source
+  ! ghost_get_source zoxide >/dev/null 2>&1 || { echo "FAIL: zoxide source registered when command missing"; exit 1; }
+  echo "ALL test_zoxide_source PASSED (graceful skip)"
+  exit 0
+fi
+
 tmp_zo="$(mktemp -d)"
 export _ZO_DATA_DIR="$tmp_zo"
 trap 'rm -rf "$tmp_zo"' EXIT
