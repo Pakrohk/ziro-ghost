@@ -8,6 +8,7 @@ typeset -gA _ghost_sources_handler
 typeset -gA _ghost_sources_weight
 typeset -gA _ghost_sources_kind
 typeset -gA _ghost_sources_enabled
+typeset -gA _ghost_sources_fallback
 
 typeset -gA _ghost_uis_intent
 typeset -gA _ghost_uis_handler
@@ -29,15 +30,17 @@ ghost_register_source() {
   local weight=10
   local kind="cmd"
   local enabled="true"
+  local fallback_only="0"
 
   while (( $# )); do
     case "$1" in
-      --intent)  intent="$2"; shift 2 ;;
-      --handler) handler="$2"; shift 2 ;;
-      --weight)  weight="$2"; shift 2 ;;
-      --kind)    kind="$2"; shift 2 ;;
-      --enabled) enabled="$2"; shift 2 ;;
-      *)         shift ;;
+      --intent)        intent="$2"; shift 2 ;;
+      --handler)       handler="$2"; shift 2 ;;
+      --weight)        weight="$2"; shift 2 ;;
+      --kind)          kind="$2"; shift 2 ;;
+      --enabled)       enabled="$2"; shift 2 ;;
+      --fallback-only) fallback_only="1"; shift ;;
+      *)               shift ;;
     esac
   done
 
@@ -51,6 +54,7 @@ ghost_register_source() {
   _ghost_sources_weight[$name]="$weight"
   _ghost_sources_kind[$name]="$kind"
   _ghost_sources_enabled[$name]="$enabled"
+  _ghost_sources_fallback[$name]="$fallback_only"
 }
 
 # Register a UI renderer (inline, popup, etc.)
@@ -133,5 +137,6 @@ ghost_get_source() {
     "handler=${_ghost_sources_handler[$name]}" \
     "weight=${_ghost_sources_weight[$name]}" \
     "kind=${_ghost_sources_kind[$name]}" \
-    "enabled=${_ghost_sources_enabled[$name]}"
+    "enabled=${_ghost_sources_enabled[$name]}" \
+    "fallback_only=${_ghost_sources_fallback[$name]:-0}"
 }

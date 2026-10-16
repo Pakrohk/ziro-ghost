@@ -18,8 +18,13 @@ _ghost_compute() {
   [[ "$query" == *$'\n'* ]] && return 0
 
   local all_candidates=()
-  local src handler enabled
+  local src handler enabled is_fallback
+
+  # 1. Run all normal (non-fallback) sources
   for src in ${(k)_ghost_sources_handler}; do
+    is_fallback="${_ghost_sources_fallback[$src]:-0}"
+    (( is_fallback == 1 )) && continue
+
     enabled="${_ghost_sources_enabled[$src]:-true}"
     [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
 
@@ -32,6 +37,26 @@ _ghost_compute() {
       fi
     fi
   done
+
+  # 2. If primary sources return nothing, query fallback-only sources (e.g. typo correction)
+  if (( ${#all_candidates} == 0 )); then
+    for src in ${(k)_ghost_sources_handler}; do
+      is_fallback="${_ghost_sources_fallback[$src]:-0}"
+      (( is_fallback != 1 )) && continue
+
+      enabled="${_ghost_sources_enabled[$src]:-true}"
+      [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
+
+      handler="${_ghost_sources_handler[$src]}"
+      if (( ${+functions[$handler]} )); then
+        _ghost_results=()
+        $handler "$query" >/dev/null 2>&1
+        if (( ${#_ghost_results} > 0 )); then
+          all_candidates+=("${_ghost_results[@]}")
+        fi
+      fi
+    done
+  fi
 
   (( ${#all_candidates} == 0 )) && return 0
 
@@ -119,8 +144,13 @@ _ghost_popup() {
   local query="$BUFFER"
   local all_candidates=()
 
-  local src handler enabled
+  local src handler enabled is_fallback
+
+  # 1. Run all normal (non-fallback) sources
   for src in ${(k)_ghost_sources_handler}; do
+    is_fallback="${_ghost_sources_fallback[$src]:-0}"
+    (( is_fallback == 1 )) && continue
+
     enabled="${_ghost_sources_enabled[$src]:-true}"
     [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
     handler="${_ghost_sources_handler[$src]}"
@@ -132,6 +162,25 @@ _ghost_popup() {
       fi
     fi
   done
+
+  # 2. If primary sources return nothing, query fallback-only sources
+  if (( ${#all_candidates} == 0 )); then
+    for src in ${(k)_ghost_sources_handler}; do
+      is_fallback="${_ghost_sources_fallback[$src]:-0}"
+      (( is_fallback != 1 )) && continue
+
+      enabled="${_ghost_sources_enabled[$src]:-true}"
+      [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
+      handler="${_ghost_sources_handler[$src]}"
+      if (( ${+functions[$handler]} )); then
+        _ghost_results=()
+        $handler "$query" >/dev/null 2>&1
+        if (( ${#_ghost_results} > 0 )); then
+          all_candidates+=("${_ghost_results[@]}")
+        fi
+      fi
+    done
+  fi
 
   # Rank candidates before popup
   if (( ${+functions[ghost_rank_candidates]} )); then

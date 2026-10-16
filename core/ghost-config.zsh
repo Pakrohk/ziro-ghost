@@ -93,6 +93,14 @@ _ghost_config_get() {
 # Initialize configuration
 _ghost_config_init() {
   emulate -L zsh
+
+  # Compiled defaults (Spec 009 R18)
+  _ghost_config_cache[correction.enabled]="true"
+  _ghost_config_cache[correction.mode]="suggest"
+  _ghost_config_cache[correction.max_edit_distance]="2"
+  _ghost_config_cache[correction.keyboard_distance]="true"
+  _ghost_config_cache[correction.confidence_threshold]="0.7"
+
   local xdg_conf="${XDG_CONFIG_HOME:-$HOME/.config}/ziro/ghost.conf"
   local ziro_conf="${ZIRO_CONFIG:-$HOME/.config/ziro}/ghost.conf"
 

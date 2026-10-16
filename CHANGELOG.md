@@ -2,6 +2,27 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [v0.6.0] — Typo Correction Engine (2026-10-16)
+
+### Added
+- **Typo Correction Suggestion Source (`sources/typo.source.zsh`)**:
+  - Multi-layered correction engine complying with Spec 009 R18:
+    * Layer 1: High-speed static typo map (over 30 frequent shell, git, docker, and package manager typos).
+    * Layer 2: Algorithmic checks against common commands including Damerau adjacent-character transposition detection.
+    * Layer 3: QWERTY keyboard-distance heuristic matching adjacent key slip-ups.
+    * Layer 4: Pure-Zsh bounded Levenshtein distance algorithm (max bound 2, zero forks).
+  - Registered with IOP: weight 5, kind `typo`, flag `--fallback-only`.
+- **Two-Tier Source Pipeline (`core/ghost-core.zsh`)**:
+  - Implemented primary vs fallback-only source dispatch: fallback sources only trigger if primary sources return 0 candidate suggestions.
+- **IOP Registry Flag Extension (`core/ghost-registry.zsh`)**:
+  - Added `--fallback-only` parameter to `ghost_register_source` and exposed it via `ghost_get_source`.
+- **Configuration Section `[correction]` (`core/ghost-config.zsh`)**:
+  - Integrated `correction.enabled`, `correction.mode` (`suggest`/`off`), `correction.max_edit_distance`, and `correction.keyboard_distance`.
+- **Automated Test Suites**:
+  - `tests/test_levenshtein.zsh`: 6 test cases verifying DP matrix correctness, insertions, substitutions, early bounded termination, and length filters.
+  - `tests/test_typo_source.zsh`: 8 test cases verifying static map lookups, algorithmic transposition, keyboard distance, Levenshtein distance, and configuration disabling.
+  - `tests/test_fallback_pipeline.zsh`: 4 test cases testing primary source precedence, fallback invocation on empty queries, and popup rendering of typo results.
+
 ## [v0.5.0] — Zsh Completions Bridge & Subcommand Support (2026-10-16)
 
 ### Added
