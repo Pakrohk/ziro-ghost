@@ -1,10 +1,40 @@
 #!/usr/bin/env zsh
-# ziro-ghost — Core ZLE Lifecycle & Engine Coordinator
-# Layer: Core · Spec: 009 v0.2.0 (FR-001, FR-005, R11, R13) · Version: 0.3.0
-# Coordinates ZLE hooks, source querying, ranking, and rendering.
+# ziro-ghost — Core ZLE Lifecycle, Safety Guards & Engine Coordinator
+# Layer: Core · Spec: 009 v0.2.0 (FR-001, FR-005, R11, R13, R17) · Version: 0.7.0
+# Coordinates ZLE hooks, source querying, timeout safety, ranking, and rendering.
 
 typeset -g _GHOST_CURRENT_SUGGESTION=""
 typeset -g _GHOST_CURRENT_KIND="cmd"
+
+# Safely invoke a suggestion handler with timeout and error isolation
+_ghost_invoke_handler() {
+  emulate -L zsh
+  local handler="$1" query="$2"
+  local -i timeout_ms=50
+  if (( ${+functions[_ghost_config_get]} )); then
+    local conf_timeout="$(_ghost_config_get "safety.handler_timeout_ms" "50")"
+    (( timeout_ms = conf_timeout > 0 ? conf_timeout : 50 ))
+  fi
+
+  _ghost_results=()
+  local t0=$EPOCHREALTIME
+
+  # Execute handler with error isolation (prevent crash from breaking ZLE)
+  {
+    $handler "$query" >/dev/null 2>&1
+  } || {
+    return 1
+  }
+
+  local t1=$EPOCHREALTIME
+  local -F elapsed_ms=$(( (t1 - t0) * 1000.0 ))
+  if (( elapsed_ms > timeout_ms )); then
+    # Timeout exceeded: discard results to keep prompt responsive
+    _ghost_results=()
+    return 1
+  fi
+  return 0
+}
 
 # Query all enabled sources and compute top ranked candidate
 _ghost_compute() {
@@ -18,7 +48,7 @@ _ghost_compute() {
   [[ "$query" == *$'\n'* ]] && return 0
 
   local all_candidates=()
-  local src handler enabled is_fallback
+  local src handler enabled is_fallback item=""
 
   # 1. Run all normal (non-fallback) sources
   for src in ${(k)_ghost_sources_handler}; do
@@ -30,10 +60,19 @@ _ghost_compute() {
 
     handler="${_ghost_sources_handler[$src]}"
     if (( ${+functions[$handler]} )); then
-      _ghost_results=()
-      $handler "$query" >/dev/null 2>&1
-      if (( ${#_ghost_results} > 0 )); then
-        all_candidates+=("${_ghost_results[@]}")
+      if _ghost_invoke_handler "$handler" "$query"; then
+        if (( ${#_ghost_results} > 0 )); then
+          local src_weight="${_ghost_sources_weight[$src]:-10}"
+          local src_kind="${_ghost_sources_kind[$src]:-cmd}"
+          for item in "${_ghost_results[@]}"; do
+            [[ -z "$item" ]] && continue
+            if [[ "$item" == *:* ]]; then
+              all_candidates+=("$item")
+            else
+              all_candidates+=("${src_weight}:${src_kind}:${item}")
+            fi
+          done
+        fi
       fi
     fi
   done
@@ -49,10 +88,19 @@ _ghost_compute() {
 
       handler="${_ghost_sources_handler[$src]}"
       if (( ${+functions[$handler]} )); then
-        _ghost_results=()
-        $handler "$query" >/dev/null 2>&1
-        if (( ${#_ghost_results} > 0 )); then
-          all_candidates+=("${_ghost_results[@]}")
+        if _ghost_invoke_handler "$handler" "$query"; then
+          if (( ${#_ghost_results} > 0 )); then
+            local src_weight="${_ghost_sources_weight[$src]:-10}"
+            local src_kind="${_ghost_sources_kind[$src]:-cmd}"
+            for item in "${_ghost_results[@]}"; do
+              [[ -z "$item" ]] && continue
+              if [[ "$item" == *:* ]]; then
+                all_candidates+=("$item")
+              else
+                all_candidates+=("${src_weight}:${src_kind}:${item}")
+              fi
+            done
+          fi
         fi
       fi
     done
@@ -143,8 +191,7 @@ _ghost_popup() {
   emulate -L zsh
   local query="$BUFFER"
   local all_candidates=()
-
-  local src handler enabled is_fallback
+  local src handler enabled is_fallback item=""
 
   # 1. Run all normal (non-fallback) sources
   for src in ${(k)_ghost_sources_handler}; do
@@ -155,10 +202,19 @@ _ghost_popup() {
     [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
     handler="${_ghost_sources_handler[$src]}"
     if (( ${+functions[$handler]} )); then
-      _ghost_results=()
-      $handler "$query" >/dev/null 2>&1
-      if (( ${#_ghost_results} > 0 )); then
-        all_candidates+=("${_ghost_results[@]}")
+      if _ghost_invoke_handler "$handler" "$query"; then
+        if (( ${#_ghost_results} > 0 )); then
+          local src_weight="${_ghost_sources_weight[$src]:-10}"
+          local src_kind="${_ghost_sources_kind[$src]:-cmd}"
+          for item in "${_ghost_results[@]}"; do
+            [[ -z "$item" ]] && continue
+            if [[ "$item" == *:* ]]; then
+              all_candidates+=("$item")
+            else
+              all_candidates+=("${src_weight}:${src_kind}:${item}")
+            fi
+          done
+        fi
       fi
     fi
   done
@@ -173,10 +229,19 @@ _ghost_popup() {
       [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
       handler="${_ghost_sources_handler[$src]}"
       if (( ${+functions[$handler]} )); then
-        _ghost_results=()
-        $handler "$query" >/dev/null 2>&1
-        if (( ${#_ghost_results} > 0 )); then
-          all_candidates+=("${_ghost_results[@]}")
+        if _ghost_invoke_handler "$handler" "$query"; then
+          if (( ${#_ghost_results} > 0 )); then
+            local src_weight="${_ghost_sources_weight[$src]:-10}"
+            local src_kind="${_ghost_sources_kind[$src]:-cmd}"
+            for item in "${_ghost_results[@]}"; do
+              [[ -z "$item" ]] && continue
+              if [[ "$item" == *:* ]]; then
+                all_candidates+=("$item")
+              else
+                all_candidates+=("${src_weight}:${src_kind}:${item}")
+              fi
+            done
+          fi
         fi
       fi
     done
@@ -206,6 +271,12 @@ _ghost_on_chpwd() {
 # Boot and bind ZLE widgets
 _ghost_boot() {
   emulate -L zsh
+
+  # Load custom sources configured in ghost.conf
+  if (( ${+functions[ghost_load_custom_sources]} )); then
+    ghost_load_custom_sources
+  fi
+
   if ! [[ -o interactive ]] && [[ -z "${GHOST_TEST_BOOT:-}" ]]; then
     return 0
   fi

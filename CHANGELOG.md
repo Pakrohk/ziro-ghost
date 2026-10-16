@@ -2,6 +2,32 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [v0.7.0] — Custom Source API & Safety Guards (2026-10-16)
+
+### Added
+- **Config-Driven Custom Source Parser (`core/ghost-config.zsh`)**:
+  - Full TOML parsing for `[[sources]]` arrays of tables.
+  - Supports fields: `name`, `handler`, `weight`, `kind`, `enabled`, `fallback_only`, `intent`.
+  - Supports handlers as Zsh function names or external `.zsh` file paths with `~` home directory expansion.
+- **Custom Source Lifecycle & Management (`core/ghost-registry.zsh`)**:
+  - `ghost_load_custom_sources`: Loads custom sources, sources handler files, auto-detects handler functions, and enforces built-in source conflict prevention.
+  - `ghost_reload_custom_sources`: Dynamically reloads and re-registers custom sources at runtime.
+  - `ghost_unregister_source`: Safely unregisters sources by name.
+  - `ghost_source_info`: Displays formatted metadata for any registered source.
+  - `ghost_custom_sources_list`: Returns the list of registered custom sources.
+- **Handler Timeout & Error Isolation Guards (`core/ghost-core.zsh`)**:
+  - Configurable execution timeout via `[safety] handler_timeout_ms = 50`. Handlers exceeding this threshold are automatically discarded to preserve prompt responsiveness.
+  - Complete error isolation: crashing or non-zero exiting handlers are silenced and cannot break ZLE or other sources.
+  - Automatic candidate format normalization (`weight:kind:text`).
+- **Developer Documentation & Guides**:
+  - `docs/CUSTOM-SOURCES.md`: Comprehensive guide for creating declarative and file-based custom sources.
+  - `docs/examples/work-source.zsh`: Full working reference example for team-specific command suggestions.
+- **Comprehensive Test Suites**:
+  - `tests/test_custom_source_config.zsh`: 5 test cases testing empty tables, single/multiple sources, disabled sources, and path resolution.
+  - `tests/test_custom_source_register.zsh`: 5 test cases testing function handlers, file handlers, built-in name collisions, and fallback propagation.
+  - `tests/test_custom_source_pipeline.zsh`: 4 test cases testing pipeline participation, fallback execution, crash isolation, and execution timeouts.
+  - `tests/test_public_api.zsh`: 4 test cases testing unregistration, metadata retrieval, custom filtering, and duplicate warning.
+
 ## [v0.6.0] — Typo Correction Engine (2026-10-16)
 
 ### Added
