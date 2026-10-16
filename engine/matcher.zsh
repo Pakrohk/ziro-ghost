@@ -1,10 +1,11 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Matching Engine
-# Layer: Engine · Spec: 009 v0.2.0 (FR-004) · Version: 0.2.0
+# Layer: Engine · Spec: 009 v0.2.0 (FR-004) · Version: 0.3.0
 # Provides prefix and fuzzy matching algorithms.
 
 # Strict prefix matcher: candidate starts with query
 ghost_match_prefix() {
+  emulate -L zsh
   local query="$1"
   local cand="$2"
 
@@ -15,6 +16,7 @@ ghost_match_prefix() {
 
 # Fuzzy matcher: candidate contains characters of query in order
 ghost_match_fuzzy() {
+  emulate -L zsh
   local query="$1"
   local cand="$2"
 

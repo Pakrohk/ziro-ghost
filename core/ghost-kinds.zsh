@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Kind system
-# Layer: Core · Spec: 009 v0.2.0 (R11) · Version: 0.2.0
+# Layer: Core · Spec: 009 v0.2.0 (R11) · Version: 0.3.0
 # Manages semantic icons, labels, colors, and Nerd Font fallbacks.
 
 # Guard: typeset associative structures
@@ -24,6 +24,7 @@ typeset -gA _ghost_ansi_colors=(
 
 # Register or update a suggestion kind
 ghost_kind_register() {
+  emulate -L zsh
   local name="$1"
   shift
 
@@ -50,6 +51,7 @@ ghost_kind_register() {
 
 # Check if Nerd Font is active
 ghost_has_nerd_font() {
+  emulate -L zsh
   if (( ${+ZIRO_NERD_FONT} )) && (( ZIRO_NERD_FONT == 1 )); then
     return 0
   fi
@@ -61,6 +63,7 @@ ghost_has_nerd_font() {
 
 # Retrieve raw metadata: icon color label
 ghost_kind_get() {
+  emulate -L zsh
   local name="${1:-cmd}"
   local icon
   if ghost_has_nerd_font; then
@@ -76,6 +79,7 @@ ghost_kind_get() {
 
 # Render formatted kind with color escapes
 ghost_kind_render() {
+  emulate -L zsh
   local name="${1:-cmd}"
   local icon
   if ghost_has_nerd_font; then
@@ -86,6 +90,7 @@ ghost_kind_render() {
 
   # Respect NO_COLOR standard (https://no-color.org)
   if [[ -n "${NO_COLOR:-}" ]]; then
+    REPLY="$icon"
     print -rn -- "$icon"
     return 0
   fi
@@ -94,17 +99,20 @@ ghost_kind_render() {
   local c_code="${_ghost_ansi_colors[$color_name]:-${_ghost_ansi_colors[white]}}"
   local reset="${_ghost_ansi_colors[reset]}"
 
+  REPLY="${c_code}${icon}${reset}"
   print -rn -- "${c_code}${icon}${reset}"
 }
 
 # Return ASCII fallback for a kind
 ghost_kind_fallback() {
+  emulate -L zsh
   local name="${1:-cmd}"
   print -r -- "${_ghost_kinds_ascii[$name]:-$name}"
 }
 
 # Initialize 12 default kinds per Spec 009 v0.2.0
 _ghost_kinds_init() {
+  emulate -L zsh
   ghost_kind_register git      --icon "󰊢" --ascii-icon "*"  --color green   --label "git"
   ghost_kind_register cmd      --icon "" --ascii-icon "$"  --color blue    --label "cmd"
   ghost_kind_register path     --icon "󰉋" --ascii-icon "~"  --color yellow  --label "path"

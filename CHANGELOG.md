@@ -2,6 +2,31 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [v0.3.0] — Popup Menu, Tab Navigation & Quality Fixes (2026-10-16)
+
+### Added
+- **Interactive Popup Menu & Fallback (`ui/popup.ui.zsh`)**:
+  - Full fzf integration with `--bind="tab:down,btab:up"` for seamless Tab/Shift-Tab cycling.
+  - Native ZLE fallback menu when fzf is absent with numeric and Tab cycling.
+  - Accurate raw buffer insertion without text corruption via tab-separated tokens.
+  - Kind icon and label decoration in popup list (`[icon] text │ kind │ source`).
+- **Comprehensive Test Suites**:
+  - `tests/test_popup.zsh`: fzf availability, native fallback rendering, and buffer updating.
+  - `tests/test_tab_navigation.zsh`: Tab/Shift-Tab selection stepping and keybinding registration.
+  - `tests/test_comparator.zsh`: Pure-Zsh scoring, kind bias, and zero-fork ranking.
+  - `tests/test_hotpath_quality.zsh`: Spec 011 static checks, module hoisting, and `emulate -L zsh`.
+- **Handoff Mechanism (`.specify/HANDOFF.md`)**: Full project identity, roadmap, architecture, test status, and cross-project references.
+
+### Changed & Optimized (Spec 011 Compliance)
+- **Local Shell Emulation**: Added `emulate -L zsh` across all 39 functions in `core/`, `ui/`, `engine/`, and `sources/`.
+- **Module Hoisting**: Hoisted `zmodload zsh/datetime` and `zmodload zsh/mapfile` to file headers.
+- **Zero-Fork Candidate Pipeline**:
+  - Replaced subshell execution in `_ghost_compute` with global array returns.
+  - Replaced external `sort` in comparator with pure Zsh numerical sorting `${(@On)scored}`.
+  - Replaced `cat | tail` in history source with `zmodload zsh/mapfile` array slice `[-2000,-1]`.
+- **Contextual Kind Bias**: Connected `ghost_score_candidate` to ranking pipeline with git repository awareness.
+- **Disk Cache**: Added mtime-invalidated disk cache for history entries (`~/.cache/ziro/ghost/history-cache`).
+
 ## [v0.2.0] — Initial Skeleton Release (2026-10-16)
 
 ### Added

@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — standalone IDE-like autocomplete for Zsh
-# Version: 0.2.0
+# Version: 0.3.0
 # Repository: https://github.com/Pakrohk/ziro-ghost
 # License: MIT
 #
@@ -11,6 +11,9 @@
 
 # Guard: prevent double-loading
 (( ${+functions[_ghost_boot]} )) && return 0
+
+# ─── Hoist standard modules (Spec 011 Cat 7) ───
+zmodload zsh/datetime 2>/dev/null || true
 
 # ─── Resolve plugin root ───
 typeset -g GHOST_HOME="${${(%):-%x}:A:h}"

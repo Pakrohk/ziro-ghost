@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — IOP Module Registry
-# Layer: Core · Spec: 009 v0.2.0 (R14, R17) · Version: 0.2.0
+# Layer: Core · Spec: 009 v0.2.0 (R14, R17) · Version: 0.3.0
 # Modules declare intent and capabilities, decoupled from implementation.
 
 typeset -gA _ghost_sources_intent
@@ -20,6 +20,7 @@ typeset -gA _ghost_comparators_handler
 
 # Register a suggestion source
 ghost_register_source() {
+  emulate -L zsh
   local name="$1"
   shift
 
@@ -54,6 +55,7 @@ ghost_register_source() {
 
 # Register a UI renderer (inline, popup, etc.)
 ghost_register_ui() {
+  emulate -L zsh
   local name="$1"
   shift
 
@@ -74,6 +76,7 @@ ghost_register_ui() {
 
 # Register a matching strategy (prefix, fuzzy, etc.)
 ghost_register_matcher() {
+  emulate -L zsh
   local name="$1"
   shift
 
@@ -94,6 +97,7 @@ ghost_register_matcher() {
 
 # Register a ranking comparator
 ghost_register_comparator() {
+  emulate -L zsh
   local name="$1"
   shift
 
@@ -114,11 +118,13 @@ ghost_register_comparator() {
 
 # List all registered source names
 ghost_list_sources() {
+  emulate -L zsh
   print -r -- "${(k)_ghost_sources_handler}"
 }
 
 # Get detailed metadata for a registered source
 ghost_get_source() {
+  emulate -L zsh
   local name="$1"
   if [[ -z "${_ghost_sources_handler[$name]:-}" ]]; then
     return 1

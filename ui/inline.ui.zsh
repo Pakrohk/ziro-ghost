@@ -1,10 +1,11 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Inline UI (POSTDISPLAY)
-# Layer: UI · Spec: 009 v0.2.0 (FR-001, R11) · Version: 0.2.0
+# Layer: UI · Spec: 009 v0.2.0 (FR-001, R11) · Version: 0.3.0
 # Native ZLE inline ghost text rendering with semantic kind tags.
 
 # Render inline ghost completion
 ghost_ui_inline_render() {
+  emulate -L zsh
   local suggestion="$1"
   local kind="${2:-cmd}"
 
@@ -26,7 +27,8 @@ ghost_ui_inline_render() {
   local kind_badge=""
   if (( ${+functions[ghost_kind_render]} )); then
     local icon
-    icon="$(ghost_kind_render "$kind")"
+    ghost_kind_render "$kind" >/dev/null
+    icon="$REPLY"
     kind_badge=" ${icon}"
   fi
 
@@ -36,6 +38,7 @@ ghost_ui_inline_render() {
 
 # Clear inline ghost text
 ghost_ui_inline_clear() {
+  emulate -L zsh
   typeset -g POSTDISPLAY=""
 }
 

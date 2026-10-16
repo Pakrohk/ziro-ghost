@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Core ZLE Lifecycle & Engine Coordinator
-# Layer: Core · Spec: 009 v0.2.0 (FR-001, FR-005, R11, R13) · Version: 0.2.0
+# Layer: Core · Spec: 009 v0.2.0 (FR-001, FR-005, R11, R13) · Version: 0.3.0
 # Coordinates ZLE hooks, source querying, ranking, and rendering.
 
 typeset -g _GHOST_CURRENT_SUGGESTION=""
@@ -8,6 +8,7 @@ typeset -g _GHOST_CURRENT_KIND="cmd"
 
 # Query all enabled sources and compute top ranked candidate
 _ghost_compute() {
+  emulate -L zsh
   local query="$BUFFER"
   _GHOST_CURRENT_SUGGESTION=""
   _GHOST_CURRENT_KIND="cmd"
@@ -24,17 +25,22 @@ _ghost_compute() {
 
     handler="${_ghost_sources_handler[$src]}"
     if (( ${+functions[$handler]} )); then
-      local lines=(${(f)"$($handler "$query")"})
-      all_candidates+=("${lines[@]}")
+      _ghost_results=()
+      $handler "$query" >/dev/null 2>&1
+      if (( ${#_ghost_results} > 0 )); then
+        all_candidates+=("${_ghost_results[@]}")
+      fi
     fi
   done
 
   (( ${#all_candidates} == 0 )) && return 0
 
-  # Rank candidates
+  # Rank candidates without subshell (Spec 011 Cat 1 & Cat 5)
   local ranked=()
   if (( ${+functions[ghost_rank_candidates]} )); then
-    ranked=(${(f)"$(ghost_rank_candidates "${all_candidates[@]}")"})
+    _ghost_ranked=()
+    ghost_rank_candidates "${all_candidates[@]}" >/dev/null 2>&1
+    ranked=("${_ghost_ranked[@]}")
   else
     ranked=("${all_candidates[@]}")
   fi
@@ -50,6 +56,7 @@ _ghost_compute() {
 
 # ZLE hook: called right before command line redraw
 _ghost_line_pre_redraw() {
+  emulate -L zsh
   [[ -o zle ]] || return 0
 
   # Compute best match
@@ -69,6 +76,7 @@ _ghost_line_pre_redraw() {
 
 # Widget: accept full ghost suggestion
 _ghost_accept_full() {
+  emulate -L zsh
   if [[ -n "$_GHOST_CURRENT_SUGGESTION" && "$_GHOST_CURRENT_SUGGESTION" == "$BUFFER"* ]]; then
     BUFFER="$_GHOST_CURRENT_SUGGESTION"
     CURSOR=${#BUFFER}
@@ -82,6 +90,7 @@ _ghost_accept_full() {
 
 # Widget: accept next word of ghost suggestion
 _ghost_accept_word() {
+  emulate -L zsh
   if [[ -n "$_GHOST_CURRENT_SUGGESTION" && "$_GHOST_CURRENT_SUGGESTION" == "$BUFFER"* ]]; then
     local suffix="${_GHOST_CURRENT_SUGGESTION#$BUFFER}"
     # Match next whitespace or non-whitespace segment
@@ -98,6 +107,7 @@ _ghost_accept_word() {
 
 # Widget: dismiss ghost suggestion
 _ghost_dismiss() {
+  emulate -L zsh
   _GHOST_CURRENT_SUGGESTION=""
   (( ${+functions[ghost_ui_inline_clear]} )) && ghost_ui_inline_clear
   zle -R
@@ -105,6 +115,7 @@ _ghost_dismiss() {
 
 # Widget: open interactive popup menu
 _ghost_popup() {
+  emulate -L zsh
   local query="$BUFFER"
   local all_candidates=()
 
@@ -114,10 +125,20 @@ _ghost_popup() {
     [[ "$enabled" != "true" && "$enabled" != "1" ]] && continue
     handler="${_ghost_sources_handler[$src]}"
     if (( ${+functions[$handler]} )); then
-      local lines=(${(f)"$($handler "$query")"})
-      all_candidates+=("${lines[@]}")
+      _ghost_results=()
+      $handler "$query" >/dev/null 2>&1
+      if (( ${#_ghost_results} > 0 )); then
+        all_candidates+=("${_ghost_results[@]}")
+      fi
     fi
   done
+
+  # Rank candidates before popup
+  if (( ${+functions[ghost_rank_candidates]} )); then
+    _ghost_ranked=()
+    ghost_rank_candidates "${all_candidates[@]}" >/dev/null 2>&1
+    all_candidates=("${_ghost_ranked[@]}")
+  fi
 
   if (( ${+functions[ghost_ui_popup_open]} )); then
     ghost_ui_popup_open "${all_candidates[@]}"
@@ -126,7 +147,10 @@ _ghost_popup() {
 
 # Boot and bind ZLE widgets
 _ghost_boot() {
-  [[ -o interactive ]] || return 0
+  emulate -L zsh
+  if ! [[ -o interactive ]] && [[ -z "${GHOST_TEST_BOOT:-}" ]]; then
+    return 0
+  fi
 
   autoload -Uz add-zsh-hook 2>/dev/null || true
   autoload -Uz add-zle-hook-widget 2>/dev/null || true

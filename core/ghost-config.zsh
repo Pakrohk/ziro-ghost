@@ -1,12 +1,13 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Configuration Engine
-# Layer: Core · Spec: 009 v0.2.0 (ZR-004) · Version: 0.2.0
+# Layer: Core · Spec: 009 v0.2.0 (ZR-004) · Version: 0.3.0
 # Reads TOML config (cold-path) with zstyle & compiled defaults fallback.
 
 typeset -gA _ghost_config_cache
 
 # Internal: parse simple KEY = VALUE from TOML-like files
 _ghost_config_load_toml() {
+  emulate -L zsh
   local conf_file="$1"
   [[ -r "$conf_file" ]] || return 1
 
@@ -55,11 +56,12 @@ _ghost_config_load_toml() {
 
 # Internal: check zstyle overrides (hybrid model per ADR-006)
 _ghost_config_load_zstyle() {
+  emulate -L zsh
   local key="$1"
   local style_key="${key//\./-}"
   local val
   if zstyle -s ":ghost:${style_key}" value val 2>/dev/null; then
-    print -r -- "$val"
+    REPLY="$val"
     return 0
   fi
   return 1
@@ -67,6 +69,7 @@ _ghost_config_load_zstyle() {
 
 # Query configuration value with fallback
 _ghost_config_get() {
+  emulate -L zsh
   local key="$1"
   local default_val="$2"
 
@@ -77,9 +80,8 @@ _ghost_config_get() {
   fi
 
   # 2. zstyle override
-  local z_val
-  if z_val="$(_ghost_config_load_zstyle "$key")"; then
-    print -r -- "$z_val"
+  if _ghost_config_load_zstyle "$key"; then
+    print -r -- "$REPLY"
     return 0
   fi
 
@@ -90,6 +92,7 @@ _ghost_config_get() {
 
 # Initialize configuration
 _ghost_config_init() {
+  emulate -L zsh
   local xdg_conf="${XDG_CONFIG_HOME:-$HOME/.config}/ziro/ghost.conf"
   local ziro_conf="${ZIRO_CONFIG:-$HOME/.config/ziro}/ghost.conf"
 
