@@ -94,6 +94,11 @@ ghost_history_query() {
   print -rl -- "${results[@]}"
 }
 
+_ghost_history_query() {
+  emulate -L zsh
+  ghost_history_query "$@"
+}
+
 # Register history source in IOP registry
 if (( ${+functions[ghost_register_source]} )); then
   ghost_register_source history \

@@ -173,6 +173,11 @@ _ghost_line_pre_redraw() {
   emulate -L zsh
   [[ -o zle ]] || return 0
 
+  # Refresh loading indicator
+  if (( ${+functions[_ghost_loading_refresh]} )); then
+    _ghost_loading_refresh
+  fi
+
   # Compute best match
   _ghost_compute
 

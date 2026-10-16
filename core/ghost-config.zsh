@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Configuration Engine
-# Layer: Core · Spec: 009 v0.2.0 (ZR-004, R17, FR-009) · Version: 0.8.0
+# Layer: Core · Spec: 009 v0.2.0 (ZR-004, R17, FR-009) · Version: 0.9.0
 # Reads TOML config (cold-path) with zstyle & compiled defaults fallback.
 
 typeset -gA _ghost_config_cache
@@ -181,6 +181,12 @@ _ghost_config_init() {
   _ghost_config_cache[ui.docs.source]="auto"
   _ghost_config_cache[ui.docs.cache_ttl]="86400"
   _ghost_config_cache[ui.docs.max_lines]="15"
+
+  # UI Loading Indicator Defaults (v0.9.0)
+  _ghost_config_cache[ui.loading.enabled]="true"
+  _ghost_config_cache[ui.loading.threshold_ms]="200"
+  _ghost_config_cache[ui.loading.style]="minimal"
+  _ghost_config_cache[ui.loading.show_label]="false"
 
   _ghost_config_custom_sources=()
 

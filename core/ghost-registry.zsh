@@ -25,7 +25,7 @@ typeset -gA _ghost_comparators_intent
 typeset -gA _ghost_comparators_handler
 
 # Built-in internal sources protected against collision
-typeset -ga _ghost_builtin_sources=(history project subcommand completions typo)
+typeset -ga _ghost_builtin_sources=(history project subcommand completions typo zoxide)
 
 # Validate contract bounds for custom source (positive integers within limits)
 ghost_validate_source_contract() {

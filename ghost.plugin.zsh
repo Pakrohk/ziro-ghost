@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — standalone IDE-like autocomplete for Zsh
-# Version: 0.8.0
+# Version: 0.9.0
 # Repository: https://github.com/Pakrohk/ziro-ghost
 # License: MIT
 #
@@ -28,11 +28,12 @@ source "$GHOST_HOME/core/ghost-core.zsh"
 source "$GHOST_HOME/engine/matcher.zsh"
 source "$GHOST_HOME/engine/comparator.zsh"
 
-# ─── Load UI (inline + popup + preview + docs) ───
+# ─── Load UI (inline + popup + preview + docs + loading) ───
 source "$GHOST_HOME/ui/inline.ui.zsh"
 source "$GHOST_HOME/ui/popup.ui.zsh"
 source "$GHOST_HOME/ui/preview.ui.zsh"
 source "$GHOST_HOME/ui/docs.ui.zsh"
+source "$GHOST_HOME/ui/loading.ui.zsh"
 
 # ─── Load sources (each registers itself via registry) ───
 source "$GHOST_HOME/sources/history.source.zsh"
@@ -40,6 +41,10 @@ source "$GHOST_HOME/sources/project.source.zsh"
 source "$GHOST_HOME/sources/subcommand.source.zsh"
 source "$GHOST_HOME/sources/completions.source.zsh"
 source "$GHOST_HOME/sources/typo.source.zsh"
+source "$GHOST_HOME/sources/zoxide.source.zsh"
+
+# ─── Load helpers ───
+source "$GHOST_HOME/lib/helpers.zsh"
 
 # ─── Boot ───
 _ghost_boot

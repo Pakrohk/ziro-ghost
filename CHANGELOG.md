@@ -2,6 +2,36 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [v0.9.0] — Loading Indicator, Zoxide Integration & Benchmarks (2026-10-16)
+
+### Added
+- **Pure-Zsh Loading Indicator (`ui/loading.ui.zsh`)**:
+  - Zero-fork, ultra-lightweight indicator designed for RPROMPT and terminal redraws.
+  - Spec 011 compliant: ~0.1ms overhead, zero Python, zero subprocess forks.
+  - Threshold-gated (default: 200ms) so fast queries remain completely silent.
+  - Three distinct visual styles: `minimal` (⏳), `spinner` (Braille frames), and `text` (operation label).
+  - Configurable via `[ui.loading]` section in `ghost.conf`.
+- **Zoxide Directory Suggestion Source (`sources/zoxide.source.zsh`)**:
+  - Ingests directory frecency database directly from `zoxide`.
+  - Registered with IOP: weight 15, kind `path`.
+  - Triggers on `cd ` prefix or bare `cd`, proposing matching directories.
+  - Graceful no-op fallback if zoxide is not installed.
+- **Helper Jump Shortcut (`lib/helpers.zsh`)**:
+  - Provides `j` command and alias for fast fuzzy directory switching.
+  - Interactive mode with real-time directory listing preview when `fzf` is available.
+- **Comprehensive Benchmarks & Quality Suites (`tests/test_benchmarks.zsh`)**:
+  - Hot-path plugin load measured under 10ms (well within 50ms ceiling).
+  - History query speed measured under 0.1ms (well within 10ms ceiling).
+  - Static audit verifying zero external forks in hot-path files.
+- **Developer Documentation**:
+  - `docs/LOADING-INDICATOR.md`: Complete guide on loading indicator styles and RPROMPT hooks.
+  - `docs/ZOXIDE-INTEGRATION.md`: Guide to zoxide suggestion source and `j` helper shortcut.
+- **Test Suites (29 Suites Total)**:
+  - `tests/test_loading_indicator.zsh` (8 test cases)
+  - `tests/test_zoxide_source.zsh` (6 test cases)
+  - `tests/test_helper_j.zsh` (3 test cases)
+  - `tests/test_benchmarks.zsh` (3 benchmark cases)
+
 ## [v0.8.0] — Contract Safety, Preview Pane & Documentation Window (2026-10-16)
 
 ### Added

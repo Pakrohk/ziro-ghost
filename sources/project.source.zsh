@@ -53,8 +53,13 @@ _ghost_project_detect() {
     helper="${${(%):-%x}:A:h:h}/lib/project_markers.py"
   fi
 
+  (( ${+functions[_ghost_loading_start]} )) && _ghost_loading_start "project"
   local out
-  out="$(python3 "$helper" "$dir" 2>/dev/null)" || return 1
+  out="$(python3 "$helper" "$dir" 2>/dev/null)" || {
+    (( ${+functions[_ghost_loading_stop]} )) && _ghost_loading_stop
+    return 1
+  }
+  (( ${+functions[_ghost_loading_stop]} )) && _ghost_loading_stop
   if [[ -n "$out" ]]; then
     print -r -- "$out" > "$cache_file" 2>/dev/null || true
     _ghost_project_mem_cache[$dir]="$out"

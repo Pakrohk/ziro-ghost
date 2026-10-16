@@ -45,7 +45,9 @@ _ghost_capture_via_compadd() {
   local comp_func="_${cmd}"
 
   if (( $+functions[$comp_func] )); then
+    (( ${+functions[_ghost_loading_start]} )) && _ghost_loading_start "completions"
     "$comp_func" 2>/dev/null || true
+    (( ${+functions[_ghost_loading_stop]} )) && _ghost_loading_stop
   fi
 
   unfunction compadd 2>/dev/null || true
