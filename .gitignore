@@ -1,0 +1,17 @@
+# Compiled Zsh byte code
+*.zwc
+*.zwc.old
+
+# Temporary and editor files
+*.swp
+*~
+.DS_Store
+
+# Python cache (for lib/ tools)
+__pycache__/
+*.py[cod]
+
+# Local runtime caches
+.cache/
+cache/
+*.log

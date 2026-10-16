@@ -1,0 +1,39 @@
+name: Test Ziro Ghost
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (OS ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Zsh (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh
+
+      - name: Syntax check
+        run: |
+          zsh -n ghost.plugin.zsh core/*.zsh engine/*.zsh ui/*.zsh sources/*.zsh
+
+      - name: Run test suite
+        run: |
+          for t in tests/*.zsh; do
+            echo "Running $t..."
+            zsh "$t"
+          done
+
+      - name: Standalone load verification
+        run: |
+          zsh -f -c "source ./ghost.plugin.zsh; echo 'Loaded standalone successfully'"
