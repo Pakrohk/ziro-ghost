@@ -2,6 +2,26 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [v0.5.0] — Zsh Completions Bridge & Subcommand Support (2026-10-16)
+
+### Added
+- **Zsh Completions Bridge Source (`sources/completions.source.zsh`)**:
+  - Bridges native Zsh completion system into ghost suggestion pipeline via isolated `compadd` function interception.
+  - Intercepts candidates from standard completion functions (`_git`, `_docker`, `_uv`, etc.).
+  - Registered with IOP: weight 10, kind `cmd`.
+- **Subcommand Suggestion Source (`sources/subcommand.source.zsh`)**:
+  - High-performance static subcommand tables for major developer CLI tools: `git`, `docker`, `kubectl`, `uv`, `pnpm`, `npm`, `yarn`, `cargo`, `go`, `pip`, and `brew`.
+  - Dynamic subcommand extraction fallback via completion functions.
+  - Registered with IOP: weight 10, kind `cmd`.
+- **Comprehensive Test Suites**:
+  - `tests/test_completions_source.zsh`: 4 test cases verifying IOP registration, graceful failure on uninitialized compinit, and compadd capture.
+  - `tests/test_subcommand_source.zsh`: 5 test cases testing static table retrieval, prefix matching, unknown command handling, and duplicate elimination.
+  - `tests/test_integration_multisource.zsh`: 3 test cases testing multi-source merging, weight-based ranking, and coexistence of project & subcommand sources.
+
+### Changed
+- **Calibrated Source Weights (Spec 009 R14)**:
+  - Adjusted `project` source weight from 50 to 30 to strictly align with Spec 009 R14 hierarchy (`history` 40, `project` 30, `subcommand` 10, `completions` 10).
+
 ## [v0.4.0] — Project Markers Detection (2026-10-16)
 
 ### Added

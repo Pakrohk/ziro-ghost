@@ -88,7 +88,7 @@ _ghost_project_query() {
   for cmd in "${commands[@]}"; do
     [[ -z "$cmd" ]] && continue
     if [[ -z "$query" || "$cmd" == "$query"* ]]; then
-      _ghost_results+=("50:project:$cmd")
+      _ghost_results+=("30:project:$cmd")
     fi
   done
 
@@ -111,7 +111,7 @@ if (( ${+functions[ghost_register_source]} )); then
   ghost_register_source project \
     --intent "provide project-aware suggestions based on detected project markers" \
     --handler _ghost_project_query \
-    --weight 50 \
+    --weight 30 \
     --kind project \
     --enabled true
 fi

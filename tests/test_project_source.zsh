@@ -22,7 +22,7 @@ sources=($(ghost_list_sources))
 
 meta="$(ghost_get_source project)"
 [[ "$meta" == *"kind=project"* ]] || { echo "FAIL: kind mismatch in meta"; exit 1; }
-[[ "$meta" == *"weight=50"* ]] || { echo "FAIL: weight mismatch in meta"; exit 1; }
+[[ "$meta" == *"weight=30"* ]] || { echo "FAIL: weight mismatch in meta"; exit 1; }
 
 # 2. ghost_project_query returns matching commands
 pushd "$tmp_dir" >/dev/null
@@ -30,9 +30,9 @@ ghost_project_query "" >/dev/null
 popd >/dev/null
 
 [[ ${#_ghost_results} -gt 0 ]] || { echo "FAIL: expected project commands for pyproject.toml"; exit 1; }
-# Output format: 50:project:cmd
+# Output format: 30:project:cmd
 sample="${_ghost_results[1]}"
-[[ "$sample" == "50:project:"* ]] || { echo "FAIL: invalid result format; got '$sample'"; exit 1; }
+[[ "$sample" == "30:project:"* ]] || { echo "FAIL: invalid result format; got '$sample'"; exit 1; }
 
 # 3. Query filters by prefix
 pushd "$tmp_dir" >/dev/null
