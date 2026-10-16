@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Typo Correction Suggestion Source
-# Layer: Sources · Spec: 009 v0.2.0 (FR-008, R18) · Version: 0.6.0
+# Layer: Sources · Spec: 009 v0.2.0 (FR-008, R18)
 # Fallback-only suggestion source: fires when primary sources return no matches.
 
 # ─── Static lookup table for common shell typos ───
@@ -164,17 +164,19 @@ _ghost_typo_candidates() {
   emulate -L zsh
   local query="$1"
   _ghost_results=()
-  (( ${#query} < 2 )) && return 1
+  (( ${#query} == 0 )) && return 1
 
   # Layer 1: Static map
   if [[ -n "${_ghost_typo_static[$query]:-}" ]]; then
     local repl="${_ghost_typo_static[$query]}"
     _ghost_results+=("5:typo:$repl")
-    print -rl -- "${_ghost_results[@]}"
     return 0
   fi
 
   # Layer 2: Common commands algorithmic correction
+  # Minimum query length 3 for algorithmic matching (TF-1)
+  (( ${#query} < 3 )) && return 1
+
   local -a common_commands=(
     sudo ls cd pwd mkdir rm cp mv cat grep find
     git docker kubectl uv pnpm npm yarn cargo go pip brew
@@ -185,8 +187,32 @@ _ghost_typo_candidates() {
 
   local -a matches=()
   local cmd dist
+  local -i max_dist
+
   for cmd in "${common_commands[@]}"; do
-    (( ${#cmd} - ${#query} > 2 || ${#query} - ${#cmd} > 2 )) && continue
+    # Skip exact match (not a typo)
+    [[ "$query" == "$cmd" ]] && continue
+
+    # TF-2: Length-similar filter (±1)
+    local -i d=$(( ${#cmd} - ${#query} ))
+    (( d < 0 )) && d=$(( -d ))
+    (( d > 1 )) && continue
+
+    # TF-4: First-char heuristic (must match first char or be transposition of first 2)
+    if [[ "${query[1]}" != "${cmd[1]}" ]]; then
+      if [[ ${#query} -ge 2 && ${#cmd} -ge 2 && "${query[1]}" == "${cmd[2]}" && "${query[2]}" == "${cmd[1]}" ]]; then
+        : # allowed transposition of first 2 chars
+      else
+        continue
+      fi
+    fi
+
+    # TF-3: Dynamic Levenshtein threshold
+    if (( ${#query} <= 4 )); then
+      max_dist=1
+    else
+      max_dist=2
+    fi
 
     # 1. Transposition
     if _ghost_is_transposition "$query" "$cmd"; then
@@ -200,9 +226,9 @@ _ghost_typo_candidates() {
       continue
     fi
 
-    # 3. Levenshtein bounded at 2
-    dist=$(_ghost_levenshtein_bounded "$query" "$cmd" 2)
-    (( dist <= 2 )) && matches+=("$cmd")
+    # 3. Levenshtein bounded at max_dist
+    dist=$(_ghost_levenshtein_bounded "$query" "$cmd" "$max_dist")
+    (( dist <= max_dist )) && matches+=("$cmd")
   done
 
   (( ${#matches} == 0 )) && return 1
@@ -212,7 +238,6 @@ _ghost_typo_candidates() {
     _ghost_results+=("5:typo:$m")
   done
 
-  print -rl -- "${_ghost_results[@]}"
   return 0
 }
 
@@ -239,11 +264,16 @@ ghost_typo_query() {
   _ghost_typo_query "$@"
 }
 
+_ghost_source_typo() {
+  emulate -L zsh
+  _ghost_typo_query "$@"
+}
+
 # ─── Register source in IOP with --fallback-only ───
 if (( ${+functions[ghost_register_source]} )); then
   ghost_register_source typo \
     --intent "correct common command typos when primary sources yield no results" \
-    --handler _ghost_typo_query \
+    --handler _ghost_source_typo \
     --weight 5 \
     --kind typo \
     --enabled true \

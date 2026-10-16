@@ -1,9 +1,11 @@
 # ziro-ghost 👻
 
-> IDE-like autocomplete for Zsh — standalone, modular, IOP-compliant
+> **⚠️ Minimal Version**: This is v1.0.2 — a minimal version providing only inline gray suggestions (Ghost Line).  
+> Full featured version (popup menu, focus mode, ratatui/tachyonfx) is in development as **v2.0.0** (see spec 009 v2.0.0).  
+> For now, only Ghost Line (inline gray text) is available.
 
 [![Test Ziro Ghost](https://github.com/Pakrohk/ziro-ghost/actions/workflows/test.yml/badge.svg)](https://github.com/Pakrohk/ziro-ghost/actions/workflows/test.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Pakrohk/ziro-ghost/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/Pakrohk/ziro-ghost/releases/tag/v1.0.2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---

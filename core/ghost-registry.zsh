@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — IOP Module Registry & Custom Source API
-# Layer: Core · Spec: 009 v0.2.0 (R14, R17) · Version: 0.8.0
+# Layer: Core · Spec: 009 v0.2.0 (R14, R17)
 # Modules declare intent and capabilities, decoupled from implementation.
 
 typeset -gA _ghost_sources_intent

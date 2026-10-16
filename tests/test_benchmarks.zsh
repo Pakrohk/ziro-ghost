@@ -46,9 +46,8 @@ echo "Benchmark: history query = ${best_query}ms (ceiling: 10ms)"
 # 3. Spec 011 Hot-path purity check: zero external forks in hot-path functions
 hot_path_files=(
   "$ROOT_DIR/core/ghost-core.zsh"
-  "$ROOT_DIR/engine/matcher.zsh"
-  "$ROOT_DIR/engine/comparator.zsh"
   "$ROOT_DIR/ui/inline.ui.zsh"
+  "$ROOT_DIR/sources/history.source.zsh"
 )
 
 for file in "${hot_path_files[@]}"; do

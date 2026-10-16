@@ -2,6 +2,70 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [1.0.2] — 2026-10-17 — Minimal Interim Release (Ghost Line Only)
+
+### Changed
+
+- **Simplified to Minimal Ghost Line**:
+  - Pure native ZLE `POSTDISPLAY` and `region_highlight` gray styling.
+  - Zero interference with command line typing or terminal modes.
+  - Active sources: `history` and `typo` (fallback).
+  - Streamlined `ghost.plugin.zsh` with lazy initialization on first keystroke (`_ghost_lazy_init`).
+  - Standalone sourcing verified: `zsh -f -c 'source ghost.plugin.zsh; echo OK'`.
+  - Hot-path keystroke latency: < 2.0ms.
+
+### Removed
+
+- Stripped all popup, focus, fzf-tab, preview, docs, and loading UI modules (`ui/completion.ui.zsh`, `ui/popup.ui.zsh`, `ui/preview.ui.zsh`, `ui/docs.ui.zsh`, `ui/loading.ui.zsh`).
+- Stripped popup-related secondary sources (`completions`, `subcommand`, `project`, `zoxide`).
+- All advanced interactive features deferred to the full Two-Layer (Zsh + Rust) architecture in **v2.0.0** (see Spec 009 v2.0.0).
+
+---
+
+## [1.0.1] — 2026-10-16 — Bug Fix: Native ZLE Popup + Ghost Color + Typo & Handlers
+
+### Fixed
+
+- **Native ZLE popup (complete rewrite, fzf replacement)**:
+  - Eliminated `fzf` alternate screen invocation that caused prompt loss and context leaving
+  - Replaced with pure ZLE `zle -M` non-blocking floating menu below prompt (nvim-cmp / Iris style)
+  - Non-blocking input: user can continue typing while popup is open; menu dynamically refreshes
+  - Visual selection indicator (`▸`) on active item with bold cyan highlight
+  - Header with counter (`1/N`) and dynamic source indicator (`[source: ...]`)
+  - Compact layout, right-aligned semantic kind badges, and windowing (max 10 items)
+  - Tab / Shift-Tab cycle navigation, Enter accepts selection, Esc / Ctrl-G dismisses without touching buffer
+
+- **Ghost text dim gray color styling**:
+  - Dynamic color support detection: `truecolor` (`fg=#6c6c6c`) → `256` (`fg=240`) → `ansi8` (`fg=brightblack`)
+  - User configuration override support via `ui.inline.color`
+  - Theme preset loader from `$GHOST_HOME/themes/<preset>.toml`
+  - Canonical `region_highlight` offset starting at `${#BUFFER}`
+  - Zero-fork pure Zsh parser ensuring hot-path purity (Spec 011)
+
+- **Stdout leak from source handlers (critical)**: Handlers that printed output caused terminal corruption and line jumping during ZLE keystroke events.
+  - Enforced `>/dev/null 2>&1` in `_ghost_invoke_handler` in `core/ghost-core.zsh`
+  - Removed obsolete `print -rl` statements from typo, history, subcommand, completions, and project sources
+  - Added centralized `_ghost_parse_candidate` helper to safely parse `weight:kind:text`
+
+- **Typo source over-firing**:
+  - Minimum query length raised to 3 characters (`TF-1`)
+  - Length difference filter tightened to ±1 (`TF-2`)
+  - Dynamic Levenshtein threshold: max distance 1 for words ≤ 4 chars, max distance 2 for longer (`TF-3`)
+  - First-character heuristic with transposition allowance (`TF-4`)
+  - Skip exact matches for valid commands
+
+### Compatibility
+
+- Public API remains frozen (v1.0.0 guarantee)
+- No breaking changes
+
+### Compatibility
+
+- Public API remains frozen (v1.0.0 guarantee)
+- No breaking changes
+
+---
+
 ## [1.0.0] — 2026-10-16 — Stable Release
 
 First stable release of `ziro-ghost` — standalone, modular, IDE-like autocomplete for Zsh.

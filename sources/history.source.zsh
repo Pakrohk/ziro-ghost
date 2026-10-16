@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — History Suggestion Source
-# Layer: Sources · Spec: 009 v0.2.0 (FR-003, R14) · Version: 0.3.0
+# Layer: Sources · Spec: 009 v0.2.0 (FR-003, R14)
 # Aggregates live and persistent shell history with kind tagging, mapfile, and disk caching.
 
 # ─── Hoist standard modules (Spec 011 Cat 7) ───
@@ -91,10 +91,14 @@ ghost_history_query() {
   done
 
   _ghost_results=("${results[@]}")
-  print -rl -- "${results[@]}"
 }
 
 _ghost_history_query() {
+  emulate -L zsh
+  ghost_history_query "$@"
+}
+
+_ghost_source_history() {
   emulate -L zsh
   ghost_history_query "$@"
 }
@@ -103,7 +107,7 @@ _ghost_history_query() {
 if (( ${+functions[ghost_register_source]} )); then
   ghost_register_source history \
     --intent "provide history-based suggestions" \
-    --handler ghost_history_query \
+    --handler _ghost_source_history \
     --weight 40 \
     --kind history \
     --enabled true

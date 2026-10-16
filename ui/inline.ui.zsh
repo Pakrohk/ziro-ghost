@@ -1,50 +1,81 @@
-#!/usr/bin/env zsh
-# ziro-ghost — Inline UI (POSTDISPLAY)
-# Layer: UI · Spec: 009 v0.2.0 (FR-001, R11) · Version: 0.3.0
-# Native ZLE inline ghost text rendering with semantic kind tags.
+# ziro-ghost v1.0.2 — Minimal inline renderer
 
-# Render inline ghost completion
-ghost_ui_inline_render() {
+zmodload zsh/datetime 2>/dev/null || true
+
+if ! (( ${+functions[_ghost_color_resolve_ghost]} )); then
+  local _inline_dir="${${(%):-%x}:A:h:h}"
+  [[ -r "$_inline_dir/lib/ghost-color.zsh" ]] && source "$_inline_dir/lib/ghost-color.zsh"
+fi
+
+_GHOST_HIGHLIGHT_MARK=""
+
+_ghost_ui_inline_render() {
   emulate -L zsh
   local suggestion="$1"
-  local kind="${2:-cmd}"
+  [[ -z "$suggestion" ]] && { _ghost_ui_inline_clear; return 0; }
 
-  [[ -z "$suggestion" ]] && { ghost_ui_inline_clear; return 0; }
-
-  # Calculate suffix beyond current buffer
-  local suffix=""
-  if [[ "$suggestion" == "$BUFFER"* ]]; then
-    suffix="${suggestion#$BUFFER}"
-  else
-    # If not prefix (e.g. fuzzy match), don't break cursor position in inline mode
-    ghost_ui_inline_clear
-    return 0
+  # Strip weight:kind: prefix if present (e.g. 40:history:git push -> git push)
+  if [[ "$suggestion" == [0-9]*:[^:]*:* ]]; then
+    suggestion="${suggestion#*:*:}"
   fi
 
-  [[ -z "$suffix" ]] && { ghost_ui_inline_clear; return 0; }
+  # Suffix only
+  [[ "$suggestion" == "$BUFFER"* ]] || { _ghost_ui_inline_clear; return 0; }
+  local suffix="${suggestion#$BUFFER}"
+  [[ -z "$suffix" ]] && { _ghost_ui_inline_clear; return 0; }
 
-  # Retrieve formatted kind icon and label
-  local kind_badge=""
-  if (( ${+functions[ghost_kind_render]} )); then
-    local icon
-    ghost_kind_render "$kind" >/dev/null
-    icon="$REPLY"
-    kind_badge=" ${icon}"
+  # Store for accept
+  typeset -g _ghost_last_suggestion="$suggestion"
+
+  # POSTDISPLAY
+  POSTDISPLAY="$suffix"
+
+  # Color
+  local color=""
+  if (( ${+functions[_ghost_color_resolve_ghost]} )); then
+    color="$(_ghost_color_resolve_ghost)"
   fi
+  [[ -z "$color" ]] && color="fg=8"
 
-  # Apply subtle formatting to POSTDISPLAY
-  typeset -g POSTDISPLAY="${suffix}${kind_badge}"
+  local start=$#BUFFER
+  local end=$(( start + ${#POSTDISPLAY} ))
+  typeset -g _GHOST_HIGHLIGHT_MARK="_ghost_${start}_${end}"
+  typeset -g _GHOST_HIGHLIGHT_RANGE="$start $end $color $_GHOST_HIGHLIGHT_MARK"
+
+  _ghost_ui_inline_clear_highlight
+  region_highlight+=("$_GHOST_HIGHLIGHT_RANGE")
 }
 
-# Clear inline ghost text
+_ghost_ui_inline_clear_highlight() {
+  emulate -L zsh
+  region_highlight=(${region_highlight:#*_ghost_*})
+  typeset -g _GHOST_HIGHLIGHT_MARK=""
+}
+
+_ghost_ui_inline_clear() {
+  emulate -L zsh
+  POSTDISPLAY=""
+  typeset -g _ghost_last_suggestion=""
+  _ghost_ui_inline_clear_highlight
+}
+
+# Public / test compatibility wrappers
+ghost_ui_inline_render() {
+  emulate -L zsh
+  _ghost_ui_inline_render "$@"
+}
+
 ghost_ui_inline_clear() {
   emulate -L zsh
-  typeset -g POSTDISPLAY=""
+  _ghost_ui_inline_clear "$@"
 }
 
-# Register inline UI in IOP registry
-if (( ${+functions[ghost_register_ui]} )); then
-  ghost_register_ui inline \
-    --intent "render inline ghost text using native ZLE POSTDISPLAY" \
-    --handler ghost_ui_inline_render
-fi
+_ghost_parse_candidate() {
+  emulate -L zsh
+  local raw="$1"
+  if [[ "$raw" == [0-9]*:[^:]*:* ]]; then
+    typeset -g _ghost_candidate_text="${raw#*:*:}"
+  else
+    typeset -g _ghost_candidate_text="$raw"
+  fi
+}

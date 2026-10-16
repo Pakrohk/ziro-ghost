@@ -10,8 +10,8 @@ Generated: 2026-10-16
 - **Principle**: Principle XIV (Plugin Sovereignty — fully decoupled standalone repository)
 
 ## Current Version
-- **Latest**: v1.0.0 (STABLE)
-- **Previous**: v0.9.0 (loading indicator, zoxide integration, benchmarks)
+- **Latest**: v1.0.2 (minimal interim release: Ghost Line only — inline gray text)
+- **Previous**: v1.0.1 (bugfix release) / v1.0.0 (stable release)
 
 ## Roadmap
 | Version | Content | Status |
@@ -24,7 +24,25 @@ Generated: 2026-10-16
 | **v0.7.0** | Custom Source API & Safety Guards (Spec 009 R17) | ✅ released |
 | **v0.8.0** | Preview pane + docs window + contract safety | ✅ released |
 | **v0.9.0** | Pure-Zsh Loading Indicator + Zoxide Integration + Benchmarks | ✅ released |
-| **v1.0.0** | Stable Release — ready for ziro-shell integration | ✅ released (this) |
+| **v1.0.0** | Stable Release — ready for ziro-shell integration | ✅ released |
+| **v1.0.1** | Bugfix: ghost text region_highlight + typo threshold + clean handlers | ✅ released |
+| **v1.0.2** | Minimal Ghost Line only (interim stable until v2.0.0) | ✅ released (this) |
+| **v2.0.0** | Two-Layer LSP-like Architecture (Ghost Line + Rust Focus Mode) | design package complete (ready for implementation) |
+
+## Architecture (v1.0.2 Minimal)
+- **Entry point**: `ghost.plugin.zsh` (Stage 0 lazy init on first keystroke)
+- **Core (`core/`)**:
+  - `ghost-version.zsh`: Single source of truth (`GHOST_VERSION="1.0.2"`)
+  - `ghost-config.zsh`: TOML configuration parser + defaults
+  - `ghost-registry.zsh`: Source registration API
+  - `ghost-core.zsh`: Line-pre-redraw orchestration + suggestion computation
+- **UI (`ui/`)**:
+  - `inline.ui.zsh`: Pure POSTDISPLAY + region_highlight suffix rendering
+- **Sources (`sources/`)**:
+  - `history.source.zsh`: Shell history suggestions (weight 40)
+  - `typo.source.zsh`: Fallback typo correction (weight 5)
+- **Lib (`lib/`)**:
+  - `ghost-color.zsh`: Dynamic color resolution (truecolor #6c6c6c, 256 color 240, ansi8 brightblack)
 
 ## Architecture
 - **Entry point**: `ghost.plugin.zsh` (standalone sourceable)

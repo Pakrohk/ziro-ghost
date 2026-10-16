@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Kind system
-# Layer: Core · Spec: 009 v0.2.0 (R11) · Version: 0.3.0
+# Layer: Core · Spec: 009 v0.2.0 (R11)
 # Manages semantic icons, labels, colors, and Nerd Font fallbacks.
 
 # Guard: typeset associative structures

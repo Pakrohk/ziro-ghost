@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ziro-ghost — Configuration Engine
-# Layer: Core · Spec: 009 v0.2.0 (ZR-004, R17, FR-009) · Version: 1.0.0
+# Layer: Core · Spec: 009 v0.2.0 (ZR-004, R17, FR-009)
 # Reads TOML config (cold-path) with zstyle & compiled defaults fallback.
 
 typeset -gA _ghost_config_cache
@@ -203,6 +203,8 @@ _ghost_config_init() {
     _ghost_config_load_toml "$xdg_conf"
   elif [[ -r "$ziro_conf" ]]; then
     _ghost_config_load_toml "$ziro_conf"
+  elif [[ -n "${GHOST_HOME:-}" && -r "$GHOST_HOME/config/default.conf" ]]; then
+    _ghost_config_load_toml "$GHOST_HOME/config/default.conf"
   fi
 }
 
