@@ -8,8 +8,9 @@ source "$ROOT_DIR/core/ghost-kinds.zsh"
 source "$ROOT_DIR/core/ghost-registry.zsh"
 source "$ROOT_DIR/core/ghost-config.zsh"
 
-tmp_file="$(mktemp --suffix=.zsh)"
-trap 'rm -f "$tmp_file"' EXIT
+tmp_dir="$(mktemp -d)"
+tmp_file="$tmp_dir/source.zsh"
+trap 'rm -rf "$tmp_dir"' EXIT
 
 cat << 'EOF' > "$tmp_file"
 _ghost_file_source_handler() {
