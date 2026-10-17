@@ -1,4 +1,4 @@
-# ziro-ghost v1.0.2 — Minimal inline renderer
+# ziro-ghost v1.0.3 — Minimal inline renderer
 
 zmodload zsh/datetime 2>/dev/null || true
 
@@ -44,6 +44,7 @@ _ghost_ui_inline_render() {
 
   _ghost_ui_inline_clear_highlight
   region_highlight+=("$_GHOST_HIGHLIGHT_RANGE")
+  zle -R 2>/dev/null || true
 }
 
 _ghost_ui_inline_clear_highlight() {
@@ -57,6 +58,7 @@ _ghost_ui_inline_clear() {
   POSTDISPLAY=""
   typeset -g _ghost_last_suggestion=""
   _ghost_ui_inline_clear_highlight
+  zle -R 2>/dev/null || true
 }
 
 # Public / test compatibility wrappers

@@ -1,4 +1,4 @@
-# ziro-ghost v1.0.2 — Minimal core
+# ziro-ghost v1.0.3 — Minimal core
 
 zmodload zsh/datetime 2>/dev/null || true
 
@@ -69,10 +69,18 @@ _ghost_invoke_handler() {
   return 0
 }
 
+_ghost_line_finish() {
+  emulate -L zsh
+  _ghost_ui_inline_clear
+}
+
 _ghost_boot() {
   emulate -L zsh
   autoload -Uz add-zle-hook-widget 2>/dev/null || true
+  zle -N _ghost_line_pre_redraw 2>/dev/null || true
+  zle -N _ghost_line_finish 2>/dev/null || true
   add-zle-hook-widget line-pre-redraw _ghost_line_pre_redraw 2>/dev/null || true
+  add-zle-hook-widget line-finish _ghost_line_finish 2>/dev/null || true
   
   # Key bindings for inline accept (Right Arrow, Ctrl+F, Ctrl+E)
   zle -N _ghost_accept_widget 2>/dev/null || true

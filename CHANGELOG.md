@@ -2,6 +2,17 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [1.0.3] — 2026-10-17 — Patch Release: Ghost Line Visibility & Lifecycle Fixes
+
+### Fixed
+
+- **Line-Finish Hook**: Added `line-finish` ZLE hook (`_ghost_line_finish`) to clear `POSTDISPLAY` and `region_highlight` before command execution, eliminating the visual glitch where ghost text lingered after pressing Enter.
+- **Terminal Redraw**: Explicit `zle -R` invocation in inline rendering and clearing functions, ensuring suggestions render immediately on interactive keystrokes.
+- **History Loader**: Robust in-memory + persistent `~/.zsh_history` parsing without assuming `extendedglob` or collapsing history array slices.
+- **Key Bindings**: Explicit bindings for Right Arrow (`^[[C`, `^[OC`), `Ctrl+F`, and `Ctrl+E` for inline suggestion acceptance.
+
+---
+
 ## [1.0.2] — 2026-10-17 — Minimal Interim Release (Ghost Line Only)
 
 ### Changed

@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# ziro-ghost v1.0.2 — Minimal Ghost Line
+# ziro-ghost v1.0.3 — Minimal Ghost Line
 # Repository: https://github.com/Pakrohk/ziro-ghost
 # License: MIT
 #
