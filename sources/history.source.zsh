@@ -9,6 +9,40 @@ zmodload zsh/parameter 2>/dev/null || true
 
 typeset -ga _ghost_history_cache=()
 typeset -ga _ghost_results=()
+typeset -g _ghost_histfile_mtime=0
+typeset -g _ghost_histfile_last_check=0
+
+# Ensure cached history reflects any changes to HISTFILE (cross-terminal sync)
+ghost_history_ensure_fresh() {
+  emulate -L zsh
+  local hist="${HISTFILE:-$HOME/.zsh_history}"
+  [[ -r "$hist" ]] || return 0
+
+  # Throttle: check file mtime every 2 seconds max
+  local now=$EPOCHSECONDS
+  (( now - _ghost_histfile_last_check >= 2 )) || return 0
+  _ghost_histfile_last_check=$now
+
+  local mtime
+  mtime=$(command stat -c %Y "$hist" 2>/dev/null || command stat -f %m "$hist" 2>/dev/null) || return 0
+  [[ "$mtime" == "$_ghost_histfile_mtime" ]] && return 0
+  _ghost_histfile_mtime=$mtime
+
+  # File changed — reload cache
+  ghost_history_cache_invalidate
+  ghost_history_load
+}
+
+# Append last command to cache immediately (same-terminal instant sync)
+ghost_history_append_last() {
+  emulate -L zsh
+  local last
+  last=$(fc -ln -1 2>/dev/null) || return 0
+  last=${last##[[:space:]]#}
+  [[ -z "$last" ]] && return 0
+  [[ "${_ghost_history_cache[1]}" == "$last" ]] && return 0
+  _ghost_history_cache=("$last" "${_ghost_history_cache[@]}")
+}
 
 # Load history entries into memory with mtime-based disk cache
 ghost_history_load() {
@@ -30,7 +64,9 @@ ghost_history_load() {
   # 2. Also load persistent history file if accessible
   if [[ -r "$hist_file" ]]; then
     local -a raw_lines=(${(f)mapfile[$hist_file]})
-    local -a recent=(${raw_lines[-2000,-1]})
+    local -i n_lines=${#raw_lines}
+    local -i start_idx=$(( n_lines > 2000 ? n_lines - 1999 : 1 ))
+    local -a recent=(${raw_lines[start_idx,-1]})
     local -i i
 
     for (( i = ${#recent}; i >= 1; i-- )); do
@@ -46,6 +82,9 @@ ghost_history_load() {
   fi
 
   _ghost_history_cache=("${(@u)cleaned}")
+
+  # Update cached mtime
+  _ghost_histfile_mtime=$(command stat -c %Y "$hist_file" 2>/dev/null || command stat -f %m "$hist_file" 2>/dev/null || echo 0)
 
   # 3. Save to disk cache
   local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/ziro/ghost"
@@ -72,7 +111,10 @@ ghost_history_query() {
   _ghost_results=()
   [[ -z "$query" ]] && return 0
 
-  (( ${#_ghost_history_cache} == 0 )) && ghost_history_load
+  ghost_history_ensure_fresh
+  if (( ${#_ghost_history_cache} == 0 )); then
+    ghost_history_load
+  fi
 
   local results=()
   local item count=0
@@ -113,4 +155,10 @@ if (( ${+functions[ghost_register_source]} )); then
     --weight 40 \
     --kind history \
     --enabled true
+fi
+
+# Precmd hook for instant same-terminal history caching
+autoload -Uz add-zsh-hook 2>/dev/null
+if (( ${+functions[add-zsh-hook]} )); then
+  add-zsh-hook precmd ghost_history_append_last 2>/dev/null
 fi
