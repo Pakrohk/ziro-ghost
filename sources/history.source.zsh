@@ -33,13 +33,81 @@ ghost_history_ensure_fresh() {
   ghost_history_load
 }
 
+# --- Secret filter (spec 016 R1-R4, v1.0.5) ---
+ghost_history_is_sensitive() {
+  emulate -L zsh
+  setopt extendedglob
+  local line="$1"
+  [[ -z "$line" ]] && return 1
+
+  # R2: skip lines starting with space (HIST_IGNORE_SPACE)
+  [[ "$line" == [[:space:]]* ]] && return 0
+
+  # R3: skip lines > 500 chars
+  (( ${#line} > 500 )) && return 0
+
+  # R4: skip lines with 40+ consecutive alphanumeric (likely base64/hex secrets)
+  [[ "$line" == *[A-Za-z0-9](#c40,)* ]] && return 0
+
+  # R1: check against known secret patterns
+  local -a secret_patterns=(
+    "*(--password|--passwd|--token|--secret|--api[-_]key|--auth|--passphrase)=*"
+    "*(#i)authorization:[[:space:]]#(bearer|basic)*"
+    "*-p[^[:space:]]*"
+    "*(#i)(passphrase|passout|passin|credential)*"
+    "*(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9](#c36)*"
+    "*AKIA[0-9A-Z](#c16)*"
+    "*sk-[A-Za-z0-9_-](#c20,)*"
+    "*xox[bp]-[A-Za-z0-9-](#c10,)*"
+    "*(#i)BEGIN*(private key|rsa private key|openssh private key)*"
+    "*(id_rsa|id_ed25519|id_ecdsa|id_dsa)*"
+  )
+
+  local pat
+  for pat in "${secret_patterns[@]}"; do
+    if [[ "$line" == $~pat ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# Save cache to disk with filter + permissions (spec 016 R1-R6, v1.0.5)
+ghost_history_save() {
+  emulate -L zsh
+  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/ziro/ghost"
+  local cache_file="${GHOST_CACHE_FILE:-$cache_dir/history-cache}"
+  local dir="${cache_file:h}"
+
+  [[ -d "$dir" ]] || mkdir -p "$dir" 2>/dev/null || true
+  chmod 700 "$dir" 2>/dev/null || true
+
+  local line
+  local -a filtered=()
+  for line in "${_ghost_history_cache[@]}"; do
+    ghost_history_is_sensitive "$line" || filtered+=("$line")
+  done
+
+  if (( ${#filtered} > 0 )); then
+    print -rl -- "${filtered[@]}" > "$cache_file" 2>/dev/null || true
+  else
+    : > "$cache_file" 2>/dev/null || true
+  fi
+  chmod 600 "$cache_file" 2>/dev/null || true
+}
+
 # Append last command to cache immediately (same-terminal instant sync)
 ghost_history_append_last() {
   emulate -L zsh
-  local last
-  last=$(fc -ln -1 2>/dev/null) || return 0
-  last=${last##[[:space:]]#}
+  local raw_last
+  raw_last=$(fc -ln -1 2>/dev/null) || return 0
+  # Filter sensitive commands before adding to cache
+  ghost_history_is_sensitive "$raw_last" && return 0
+
+  local last="${raw_last##[[:space:]]#}"
   [[ -z "$last" ]] && return 0
+  ghost_history_is_sensitive "$last" && return 0
   [[ "${_ghost_history_cache[1]}" == "$last" ]] && return 0
   _ghost_history_cache=("$last" "${_ghost_history_cache[@]}")
 }
@@ -87,12 +155,7 @@ ghost_history_load() {
   _ghost_histfile_mtime=$(command stat -c %Y "$hist_file" 2>/dev/null || command stat -f %m "$hist_file" 2>/dev/null || echo 0)
 
   # 3. Save to disk cache
-  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/ziro/ghost"
-  local cache_file="$cache_dir/history-cache"
-  if (( ${#_ghost_history_cache} > 0 )); then
-    [[ -d "$cache_dir" ]] || mkdir -p "$cache_dir" 2>/dev/null || true
-    print -rl -- "${_ghost_history_cache[@]}" > "$cache_file" 2>/dev/null || true
-  fi
+  ghost_history_save
 }
 
 # Invalidate cached history

@@ -2,6 +2,24 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [1.0.5] — 2026-10-31 — Security Release: Ghost History Cache Secret Filter + Permissions
+
+### Security
+
+- **Credential & Secret Filtering**: Added `ghost_history_is_sensitive()` checking 10 high-risk credential patterns (AWS access keys `AKIA*`, GitHub tokens `ghp_*`/`gho_*`/`ghu_*`/`ghs_*`/`ghr_*`, OpenAI keys `sk-*`, Slack tokens `xoxb-*`/`xoxp-*`, HTTP `Authorization: Bearer`/`Basic` headers, database password flags `-p<pass>` and `--password=`, private key headers `BEGIN PRIVATE KEY`, SSH key paths `id_rsa`/`id_ed25519`, and generic passphrase/credential keywords).
+- **Format Hygiene**: Commands beginning with a leading space (honoring `HIST_IGNORE_SPACE`), commands longer than 500 characters, and strings containing 40+ consecutive alphanumeric characters (likely base64/hex secrets) are skipped before persistence.
+- **Strict File Permissions**: Enforced `0600` (`-rw-------`) on `history-cache` and `0700` (`drwx------`) on `~/.cache/ziro/ghost/` upon every save and load.
+
+---
+
+## [1.0.4] — 2026-10-25 — Real-time History Sync
+
+### Added
+
+- Real-time history cache refresh via mtime check and precmd hook.
+
+---
+
 ## [1.0.3] — 2026-10-17 — Patch Release: Ghost Line Visibility & Lifecycle Fixes
 
 ### Fixed
