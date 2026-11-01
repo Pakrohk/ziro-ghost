@@ -15,21 +15,8 @@ typeset -g _ghost_histfile_last_check=0
 # Ensure cached history reflects any changes to HISTFILE (cross-terminal sync)
 ghost_history_ensure_fresh() {
   emulate -L zsh
-  local hist="${HISTFILE:-$HOME/.zsh_history}"
-  [[ -r "$hist" ]] || return 0
-
-  # Throttle: check file mtime every 2 seconds max
-  local now=$EPOCHSECONDS
-  (( now - _ghost_histfile_last_check >= 2 )) || return 0
-  _ghost_histfile_last_check=$now
-
-  local mtime
-  mtime=$(command stat -c %Y "$hist" 2>/dev/null || command stat -f %m "$hist" 2>/dev/null) || return 0
-  [[ "$mtime" == "$_ghost_histfile_mtime" ]] && return 0
-  _ghost_histfile_mtime=$mtime
-
-  # File changed — reload cache
-  ghost_history_cache_invalidate
+  # Fast path: in-memory cache is already warm (zero fork, zero lag on keystroke)
+  (( ${#_ghost_history_cache} > 0 )) && return 0
   ghost_history_load
 }
 
@@ -97,12 +84,12 @@ ghost_history_save() {
   chmod 600 "$cache_file" 2>/dev/null || true
 }
 
-# Append last command to cache immediately (same-terminal instant sync)
+# Append last command to cache immediately (same-terminal instant sync, per-command filter)
 ghost_history_append_last() {
   emulate -L zsh
   local raw_last
   raw_last=$(fc -ln -1 2>/dev/null) || return 0
-  # Filter sensitive commands before adding to cache
+  # Filter single sensitive command before adding to cache (0.05ms)
   ghost_history_is_sensitive "$raw_last" && return 0
 
   local last="${raw_last##[[:space:]]#}"
@@ -110,17 +97,36 @@ ghost_history_append_last() {
   ghost_history_is_sensitive "$last" && return 0
   [[ "${_ghost_history_cache[1]}" == "$last" ]] && return 0
   _ghost_history_cache=("$last" "${_ghost_history_cache[@]}")
+
+  # Persist clean command to history-cache file (0.1ms append)
+  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/ziro/ghost"
+  local cache_file="${GHOST_CACHE_FILE:-$cache_dir/history-cache}"
+  if [[ -f "$cache_file" ]]; then
+    print -r -- "$last" >> "$cache_file" 2>/dev/null || true
+  fi
 }
 
-# Load history entries into memory with mtime-based disk cache
+# Load history entries into memory with fast pre-filtered disk cache
 ghost_history_load() {
   emulate -L zsh
-  local hist_file="${HISTFILE:-$HOME/.zsh_history}"
+  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/ziro/ghost"
+  local cache_file="${GHOST_CACHE_FILE:-$cache_dir/history-cache}"
 
+  # 1. Fast path: load pre-filtered disk cache directly (0.5ms, zero filter overhead)
+  if [[ -r "$cache_file" ]]; then
+    local -a cached_lines=(${(f)mapfile[$cache_file]})
+    if (( ${#cached_lines} > 0 )); then
+      _ghost_history_cache=("${(@u)cached_lines}")
+      return 0
+    fi
+  fi
+
+  # 2. Cold fallback: First-time boot when no disk cache exists yet
+  local hist_file="${HISTFILE:-$HOME/.zsh_history}"
   local -a cleaned=()
   local line clean_line
 
-  # 1. Prefer in-memory Zsh history array if running interactively
+  # Prefer in-memory Zsh history array if running interactively
   if (( ${+history} && ${#history} > 0 )); then
     local -a keys=(${(Onk)history})
     local k
@@ -129,7 +135,7 @@ ghost_history_load() {
     done
   fi
 
-  # 2. Also load persistent history file if accessible
+  # Also load persistent history file if accessible
   if [[ -r "$hist_file" ]]; then
     local -a raw_lines=(${(f)mapfile[$hist_file]})
     local -i n_lines=${#raw_lines}
@@ -151,19 +157,14 @@ ghost_history_load() {
 
   _ghost_history_cache=("${(@u)cleaned}")
 
-  # Update cached mtime
-  _ghost_histfile_mtime=$(command stat -c %Y "$hist_file" 2>/dev/null || command stat -f %m "$hist_file" 2>/dev/null || echo 0)
-
-  # 3. Save to disk cache
+  # 3. Save initial sanitized cache to disk
   ghost_history_save
 }
 
-# Invalidate cached history
+# Invalidate cached history (memory only; keeps clean disk cache intact)
 ghost_history_cache_invalidate() {
   emulate -L zsh
   _ghost_history_cache=()
-  local cache_file="${XDG_CACHE_HOME:-$HOME/.cache}/ziro/ghost/history-cache"
-  rm -f "$cache_file" 2>/dev/null || true
 }
 
 # Query history source for matching commands

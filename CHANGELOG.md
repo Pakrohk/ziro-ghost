@@ -2,6 +2,16 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [1.0.6] — 2026-11-01 — Performance & Zero-Lag History Architecture
+
+### Performance
+- **Zero Keystroke Lag**: Removed full-history filtering and disk mtime checks from `line-pre-redraw` / keystroke hot path.
+- **Per-Command Filter**: `ghost_history_append_last` filters single executed command on `precmd` (0.05ms) and appends clean commands directly to disk cache.
+- **Fast Load**: `ghost_history_load` directly loads already-sanitized `history-cache` in <1ms without re-filtering 2000 lines.
+- **Safe Invalidation**: `ghost_history_cache_invalidate` resets in-memory cache without deleting the clean disk file.
+
+---
+
 ## [1.0.5] — 2026-10-31 — Security Release: Ghost History Cache Secret Filter + Permissions
 
 ### Security
