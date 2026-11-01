@@ -38,7 +38,7 @@ ghost_history_is_sensitive() {
 
   # R1: check against known secret patterns
   local -a secret_patterns=(
-    "*(--password|--passwd|--token|--secret|--api[-_]key|--auth|--passphrase)=*"
+    "*(--password|--passwd|--token|--secret*|--api[-_]key|--auth*|--passphrase)([= ]*|)*"
     "*(#i)authorization:[[:space:]]#(bearer|basic)*"
     "*-p[^[:space:]]*"
     "*(#i)(passphrase|passout|passin|credential)*"
@@ -48,6 +48,7 @@ ghost_history_is_sensitive() {
     "*xox[bp]-[A-Za-z0-9-](#c10,)*"
     "*(#i)BEGIN*(private key|rsa private key|openssh private key)*"
     "*(id_rsa|id_ed25519|id_ecdsa|id_dsa)*"
+    "*://*:[^/@[:space:]]##@*"
   )
 
   local pat

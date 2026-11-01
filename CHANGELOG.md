@@ -2,6 +2,15 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [1.0.7] — 2026-11-01 — Security Hardening: Extended Secret Pattern Matching
+
+### Security
+- **Expanded Secret Options**: Filter `--secret*` variants including `--secret-id` and `--secret-arn` with space or equals delimiters.
+- **URL-embedded Credentials**: Flag sensitive URLs containing embedded credentials (`https://user:token@host`).
+- **Edge-Case Validation**: Validated against ziro-shell Spec 020 12-point edge case test suite.
+
+---
+
 ## [1.0.6] — 2026-11-01 — Performance & Zero-Lag History Architecture
 
 ### Performance
