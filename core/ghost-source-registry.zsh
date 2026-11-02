@@ -54,6 +54,11 @@ _ghost_source_refresh() {
   local name="$1"
   [[ -z "$name" ]] && return 0
 
+  if [[ "$name" == "stats" ]] && (( ${+functions[_ghost_source_stats_refresh]} )); then
+    _ghost_source_stats_refresh
+    return 0
+  fi
+
   local env_var="ZIRO_GHOST_SOURCE_${(U)name}"
   if (( ${+parameters[$env_var]} )) && [[ "${(P)env_var}" == "0" ]]; then
     return 0

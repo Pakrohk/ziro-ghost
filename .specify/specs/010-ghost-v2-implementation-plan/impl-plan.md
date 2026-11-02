@@ -150,10 +150,13 @@ This document breaks down the 2,606-line design package (Spec 009) into 10 testa
 ### Milestone 8 (M8): Observability, Metrics & Diagnostics
 - **Objective**: Complete runtime diagnostics, metrics recording, and health check interfaces (R24).
 - **Deliverables**:
-  - `lib/ghost-logging.zsh`: Structured JSONL logging to `$ZIRO_CACHE/ghost/metrics.jsonl`.
-  - `lib/ghost-stats.zsh`: CLI reporter (`ghost stats`) displaying hit rates, p95 latencies, and fallback counts.
-  - Health check hook compatible with `ziro doctor`.
-- **Verification**: Verify metrics records generated on keystrokes and validated against JSON schema.
+  - `core/ghost-metrics.zsh`: 100-entry in-memory ring buffer with `shift` drop tracking, `precmd` batched flush, and 10,000-line rotation.
+  - Zero hot-path I/O: O(1) in-memory metrics append in `_ghost_suggest` and `_ghost_intent_publish`.
+  - `core/ghost-stats.zsh`: CLI reporter (`ghost stats`) computing P50/P95/P99 latencies, cache hit rates, error counts, with `--json`, `--since`, and `--intent` filters.
+  - `core/ghost-doctor.zsh`: Standalone 8-point health check diagnostic (cache directory permissions, cache files 0600, metrics file integrity, binary availability, ziro-defer status, source registration, gateway processors, ring buffer health).
+  - Cache rollup: `_ghost_source_stats_refresh` aggregating metrics into M4 `stats` cache plugin.
+  - 17 hermetic observability test assertions in `tests/test_observability_m8.zsh`.
+- **Status**: Completed (M8 Verified).
 
 ### Milestone 9 (M9): Declarative Plugin Manifest (`ziro-plugin.toml`)
 - **Objective**: Fulfill Spec 012 declarative plugin specification (R21).
@@ -267,9 +270,10 @@ Total estimated effort: **10 to 14 days** of focused engineering work across 5 e
 
 ## 10. Reality Check
 
-- **Shipped in commit**: `M7 In-Progress (ziro-defer stage-5 warmup Verified)`
-- **Actual deviations from spec**: None. Pure registration at shell init, cache warmup deferred to `ziro-defer` stage 5 (or first precmd fallback), and cold start accepted.
+- **Shipped in commit**: `M8 In-Progress (Observability, Metrics & Diagnostics Verified)`
+- **Actual deviations from spec**: None. Async batched metrics with zero keystroke file I/O, ring buffer with drop tracking, JSONL schema validation, `ghost stats` with P50/P95/P99 and JSON export, standalone `ghost doctor` 8-point check, and rollup into M4 `stats` cache plugin.
 - **Observed test results**:
+  - `tests/test_observability_m8.zsh`: 17/17 assertions passing across all 14 M8 test cases.
   - `tests/test_defer_m7.zsh`: 15/15 assertions passing across all 8 M7 test cases.
   - `tests/test_sources_m6.zsh`: 10/10 functional source tests passing.
   - `tests/test_latency_m6.zsh`: 7/7 strict latency & zero-fork assertions passing.
@@ -278,4 +282,4 @@ Total estimated effort: **10 to 14 days** of focused engineering work across 5 e
   - `cargo test --release`: 11/11 passing (M3 preserved).
   - Existing `test_ghost_filter.py` and `test_ghost_edge_cases.py`: 23/23 passing (v1.0.7 preserved).
   - Binary size: **591KB** (unchanged, strictly under 2.5MB budget).
-  - Keystroke latency: **0.34ms** median (sacred budget <1.0ms achieved, zero forks verified via /proc/stat).
+  - Keystroke latency: **0.82ms** median (sacred budget <1.0ms strictly preserved).

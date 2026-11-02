@@ -144,28 +144,44 @@ _ghost_intent_publish() {
   local meta="$3"
   [[ -z "$meta" ]] && meta="{}"
 
+  local t0=${EPOCHREALTIME:-0}
+  local ret=0
+
   # Gateway bypass check (for benchmarking or debugging)
   if (( ${+ZIRO_GHOST_GATEWAY_BYPASS} )) && [[ "$ZIRO_GHOST_GATEWAY_BYPASS" == "1" ]]; then
     _ghost_intent_publish_raw "$name" "$level" "$meta"
-    return $?
-  fi
-
-  # Route intent through gateway pipeline (zero-fork)
-  if (( ${+functions[_ghost_intent_process]} )); then
-    (( ++_ghost_intent_seq ))
-    local id="intent-${_ghost_intent_seq}-${EPOCHSECONDS:-0}"
-    local intent_json="{\"id\":\"${id}\",\"name\":\"${name}\",\"level\":\"${level}\",\"metadata\":${meta}}"
-    typeset -g _GHOST_INTENT_INTERNAL=1
-    if ! _ghost_intent_process "$intent_json"; then
+    ret=$?
+  else
+    # Route intent through gateway pipeline (zero-fork)
+    if (( ${+functions[_ghost_intent_process]} )); then
+      (( ++_ghost_intent_seq ))
+      local id="intent-${_ghost_intent_seq}-${EPOCHSECONDS:-0}"
+      local intent_json="{\"id\":\"${id}\",\"name\":\"${name}\",\"level\":\"${level}\",\"metadata\":${meta}}"
+      typeset -g _GHOST_INTENT_INTERNAL=1
+      if ! _ghost_intent_process "$intent_json"; then
+        typeset -g _GHOST_INTENT_INTERNAL=0
+        _GHOST_BUS_LAST_RESPONSE="$_GHOST_GATEWAY_ERROR"
+        ret=1
+      fi
       typeset -g _GHOST_INTENT_INTERNAL=0
-      _GHOST_BUS_LAST_RESPONSE="$_GHOST_GATEWAY_ERROR"
-      return 1
     fi
-    typeset -g _GHOST_INTENT_INTERNAL=0
+
+    if (( ret == 0 )); then
+      _ghost_intent_publish_raw "$name" "$level" "$meta"
+      ret=$?
+    fi
   fi
 
-  _ghost_intent_publish_raw "$name" "$level" "$meta"
-  return $?
+  local t1=${EPOCHREALTIME:-0}
+  local dur=0
+  (( t0 > 0 && t1 > 0 )) && dur=$(( (t1 - t0) * 1000.0 ))
+  local m_stat="ok"
+  (( ret != 0 )) && m_stat="error"
+  if (( ${+functions[_ghost_metrics_record]} )); then
+    _ghost_metrics_record "$name" "$level" "$dur" "$m_stat" "" false
+  fi
+
+  return $ret
 }
 
 _ghost_intent_subscribe() {

@@ -222,10 +222,12 @@ _ghost_suggest() {
     _ghost_source_dispatch_sync "$query" 1
     if (( ${#_ghost_results} > 0 )); then
       _ghost_ui_inline_render "${_ghost_results[1]}"
+      (( ${+functions[_ghost_metrics_record]} )) && _ghost_metrics_record "ghost.suggest.query" "ephemeral" "${_GHOST_SUGGEST_ELAPSED:-0}" "ok" "" true
       return 0
     fi
   fi
 
+  (( ${+functions[_ghost_metrics_record]} )) && _ghost_metrics_record "ghost.suggest.query" "ephemeral" "${_GHOST_SUGGEST_ELAPSED:-0}" "ok" "" false
   POSTDISPLAY=''
   return 0
 }

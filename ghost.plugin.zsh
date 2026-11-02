@@ -28,6 +28,9 @@ source "$GHOST_HOME/sources/typo.source.zsh"
 source "$GHOST_HOME/sources/project.source.zsh"
 source "$GHOST_HOME/sources/zoxide.source.zsh"
 source "$GHOST_HOME/core/ghost-core.zsh"
+source "$GHOST_HOME/core/ghost-metrics.zsh"
+source "$GHOST_HOME/core/ghost-stats.zsh"
+source "$GHOST_HOME/core/ghost-doctor.zsh"
 
 ghost() {
   emulate -L zsh
@@ -37,11 +40,17 @@ ghost() {
     cache)
       _ghost_cache_cli "$@"
       ;;
+    stats)
+      _ghost_stats_cli "$@"
+      ;;
+    doctor)
+      _ghost_doctor_cli "$@"
+      ;;
     suggest)
       _ghost_suggest "$@"
       ;;
     *)
-      print -r -- "Usage: ghost {cache|suggest|popup|stats}"
+      print -r -- "Usage: ghost {cache|stats|doctor|suggest|popup}"
       return 1
       ;;
   esac
@@ -51,6 +60,7 @@ _ghost_boot
 _ghost_color_cache_init 2>/dev/null || true
 _ghost_cache_init 2>/dev/null || true
 _ghost_gateway_init 2>/dev/null || true
+_ghost_metrics_init 2>/dev/null || true
 
 # M7: defer cache warmup to ziro-defer stage 5 (or first precmd fallback)
 source "$GHOST_HOME/core/ghost-defer.zsh"
