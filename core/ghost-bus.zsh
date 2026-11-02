@@ -83,6 +83,24 @@ _ghost_intent_publish() {
   local meta="$3"
   [[ -z "$meta" ]] && meta="{}"
 
+  # Dispatch in-process cache and local handlers
+  if [[ "$name" == ghost.cache.* && -n "${_GHOST_HANDLERS[$name]:-}" ]]; then
+    local handler="${_GHOST_HANDLERS[$name]}"
+    if (( $+functions[$handler] )); then
+      (( ++_ghost_intent_seq ))
+      local id="intent-${_ghost_intent_seq}-${EPOCHSECONDS:-0}"
+      local ndjson="{\"id\":\"${id}\",\"name\":\"${name}\",\"level\":\"${level}\",\"metadata\":${meta}}"
+      local resp=""
+      resp="$("$handler" "$ndjson")"
+      local ret=$?
+      _GHOST_BUS_LAST_RESPONSE="$resp"
+      if [[ "$resp" == *'"status":"error"'* ]]; then
+        return 1
+      fi
+      return $ret
+    fi
+  fi
+
   # If bus not available, fail early for fallback
   if (( ! _GHOST_BUS_AVAILABLE )); then
     return 1

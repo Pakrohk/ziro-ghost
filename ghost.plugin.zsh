@@ -16,6 +16,7 @@ source "$GHOST_HOME/core/ghost-version.zsh"
 source "$GHOST_HOME/core/ghost-config.zsh"
 source "$GHOST_HOME/core/ghost-kinds.zsh"
 source "$GHOST_HOME/core/ghost-bus.zsh"
+source "$GHOST_HOME/core/ghost-cache.zsh"
 source "$GHOST_HOME/core/ghost-registry.zsh"
 source "$GHOST_HOME/lib/ghost-color.zsh"
 source "$GHOST_HOME/ui/inline.ui.zsh"
@@ -23,4 +24,23 @@ source "$GHOST_HOME/sources/history.source.zsh"
 source "$GHOST_HOME/sources/typo.source.zsh"
 source "$GHOST_HOME/core/ghost-core.zsh"
 
+ghost() {
+  emulate -L zsh
+  local cmd="${1:-}"
+  shift 2>/dev/null || true
+  case "$cmd" in
+    cache)
+      _ghost_cache_cli "$@"
+      ;;
+    suggest)
+      _ghost_suggest "$@"
+      ;;
+    *)
+      print -r -- "Usage: ghost {cache|suggest|popup|stats}"
+      return 1
+      ;;
+  esac
+}
+
 _ghost_boot
+_ghost_cache_init 2>/dev/null || true
