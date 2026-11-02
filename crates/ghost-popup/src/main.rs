@@ -1,11 +1,15 @@
 //! Focus Mode interactive TUI binary & Intent Bus dispatcher for Ghost v2.0.0.
 
+pub mod ui;
+
 use ghost_protocol::{Intent, IntentResult};
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::time::SystemTime;
+use ui::app::FocusApp;
+use ui::events::{read_action, Action, TerminalGuard};
 
 struct HistoryStore {
     path: PathBuf,
@@ -91,7 +95,78 @@ impl HistoryStore {
     }
 }
 
-fn handle_intent(intent: Intent, history: &mut HistoryStore) -> Option<IntentResult> {
+fn run_interactive_focus(items: Vec<String>) -> io::Result<Option<String>> {
+    let guard = TerminalGuard::new()?;
+    let mut terminal = ratatui::init();
+    let mut app = FocusApp::new(items);
+
+    let result = loop {
+        terminal.draw(|f| ui::render::draw(f, &app))?;
+        if let Some(action) = read_action()? {
+            match action {
+                Action::Next => app.next(),
+                Action::Prev => app.prev(),
+                Action::Accept => break app.current().map(|s| s.to_string()),
+                Action::Cancel => break None,
+            }
+        }
+    };
+
+    drop(guard);
+    ratatui::restore();
+    Ok(result)
+}
+
+fn handle_focus_enter(intent: &Intent, cli_test_keys: Option<&str>) -> IntentResult {
+    let raw_items = intent.metadata.get("items").and_then(|v| v.as_array());
+    let items: Vec<String> = match raw_items {
+        Some(arr) => arr
+            .iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect(),
+        None => Vec::new(),
+    };
+
+    if items.is_empty() {
+        return IntentResult::error(&intent.id, "no items");
+    }
+
+    let test_keys = cli_test_keys.or_else(|| {
+        intent
+            .metadata
+            .get("test_keys")
+            .and_then(|v| v.as_str())
+    });
+
+    if let Some(keys) = test_keys {
+        let mut app = FocusApp::new(items);
+        match app.apply_key_sequence(keys) {
+            Some(Some(selected)) => {
+                IntentResult::ok(&intent.id, Some(serde_json::json!({ "selected": selected })))
+            }
+            Some(None) => {
+                IntentResult::ok(&intent.id, Some(serde_json::json!({ "cancelled": true })))
+            }
+            None => IntentResult::error(&intent.id, "no items"),
+        }
+    } else {
+        match run_interactive_focus(items) {
+            Ok(Some(selected)) => {
+                IntentResult::ok(&intent.id, Some(serde_json::json!({ "selected": selected })))
+            }
+            Ok(None) => {
+                IntentResult::ok(&intent.id, Some(serde_json::json!({ "cancelled": true })))
+            }
+            Err(e) => IntentResult::error(&intent.id, format!("interactive UI failed: {}", e)),
+        }
+    }
+}
+
+fn handle_intent(
+    intent: Intent,
+    history: &mut HistoryStore,
+    cli_test_keys: Option<&str>,
+) -> Option<IntentResult> {
     if intent.name.starts_with("ghost.popup.") {
         match intent.name.as_str() {
             "ghost.popup.ping" => Some(IntentResult::ok(
@@ -109,6 +184,7 @@ fn handle_intent(intent: Intent, history: &mut HistoryStore) -> Option<IntentRes
                     "version": env!("CARGO_PKG_VERSION")
                 })),
             )),
+            "ghost.popup.focus_enter" => Some(handle_focus_enter(&intent, cli_test_keys)),
             "ghost.popup.shutdown" | "ghost.popup.exit" => Some(IntentResult::ok(
                 intent.id,
                 Some(serde_json::json!({
@@ -117,7 +193,7 @@ fn handle_intent(intent: Intent, history: &mut HistoryStore) -> Option<IntentRes
             )),
             other => Some(IntentResult::error(
                 intent.id,
-                format!("action not implemented in M1/M2: {}", other),
+                format!("action not implemented in M1/M2/M3: {}", other),
             )),
         }
     } else if intent.name == "ghost.suggest.query" {
@@ -151,6 +227,15 @@ fn handle_intent(intent: Intent, history: &mut HistoryStore) -> Option<IntentRes
 }
 
 fn main() -> io::Result<()> {
+    // Detect --test-keys=<sequence>
+    let cli_test_keys: Option<String> = env::args().find_map(|arg| {
+        if let Some(stripped) = arg.strip_prefix("--test-keys=") {
+            Some(stripped.to_string())
+        } else {
+            None
+        }
+    });
+
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut out_handle = stdout.lock();
@@ -173,7 +258,7 @@ fn main() -> io::Result<()> {
         let is_shutdown = match Intent::from_ndjson_line(trimmed) {
             Ok(intent) => {
                 let name = intent.name.clone();
-                if let Some(res) = handle_intent(intent, &mut history) {
+                if let Some(res) = handle_intent(intent, &mut history, cli_test_keys.as_deref()) {
                     if let Ok(serialized) = res.to_ndjson_line() {
                         let _ = writeln!(out_handle, "{}", serialized);
                         let _ = out_handle.flush();

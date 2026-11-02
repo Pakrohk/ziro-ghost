@@ -88,6 +88,90 @@ _ghost_boot() {
   bindkey '^E' _ghost_accept_widget 2>/dev/null || true
   bindkey '^[[C' _ghost_accept_widget 2>/dev/null || true
   bindkey '^[OC' _ghost_accept_widget 2>/dev/null || true
+
+  # Focus mode Tab binding (preserves default completion when no suggestion active)
+  if [[ "${_GHOST_FOCUS_ENABLED:-1}" != "0" ]]; then
+    zle -N _ghost_focus_widget 2>/dev/null || true
+    bindkey '^I' _ghost_focus_widget 2>/dev/null || true
+  fi
+}
+
+_ghost_focus_widget() {
+  emulate -L zsh
+
+  # If no suggestion is currently shown or focus mode is disabled, pass through to default completion
+  if [[ -z "$POSTDISPLAY" || "${_GHOST_FOCUS_ENABLED:-1}" == "0" ]]; then
+    zle expand-or-complete
+    return $?
+  fi
+
+  # Lazy-init bus
+  _ghost_bus_init 2>/dev/null
+  if (( ! _GHOST_BUS_AVAILABLE )); then
+    zle expand-or-complete
+    return $?
+  fi
+
+  # Collect matching items for the popup
+  local -a matching=()
+  local item escaped_item
+  local -i count=0
+
+  for item in "${_ghost_results[@]}"; do
+    [[ "$item" == [0-9]*:[^:]*:* ]] && item="${item#*:*:}"
+    [[ -z "$item" ]] && continue
+    if [[ "$item" == "$BUFFER"* ]]; then
+      matching+=("$item")
+      (( ++count >= 10 )) && break
+    fi
+  done
+
+  if (( count < 10 )); then
+    for item in "${_ghost_history_cache[@]}"; do
+      [[ -z "$item" || "$item" == "$BUFFER" ]] && continue
+      if [[ "$item" == "$BUFFER"* ]]; then
+        if (( ${matching[(Ie)$item]} == 0 )); then
+          matching+=("$item")
+          (( ++count >= 10 )) && break
+        fi
+      fi
+    done
+  fi
+
+  if (( ${#matching} == 0 )); then
+    zle expand-or-complete
+    return $?
+  fi
+
+  # Build JSON array
+  local items_json="["
+  local first=1
+  for item in "${matching[@]}"; do
+    escaped_item="${item//\\/\\\\}"
+    escaped_item="${escaped_item//\"/\\\"}"
+    if (( first )); then
+      items_json+="\"$escaped_item\""
+      first=0
+    else
+      items_json+=",\"$escaped_item\""
+    fi
+  done
+  items_json+="]"
+
+  if _ghost_intent_publish "ghost.popup.focus_enter" "ephemeral" "{\"items\":${items_json}}"; then
+    if [[ "$_GHOST_BUS_LAST_RESPONSE" =~ '"selected":"([^"]+)"' ]]; then
+      BUFFER="${match[1]}"
+      CURSOR=${#BUFFER}
+      _ghost_ui_inline_clear
+      zle reset-prompt 2>/dev/null || true
+      return 0
+    elif [[ "$_GHOST_BUS_LAST_RESPONSE" =~ '"cancelled":true' ]]; then
+      zle reset-prompt 2>/dev/null || true
+      return 0
+    fi
+  fi
+
+  zle send-break
 }
 
 _ghost_suggest_v107_fallback() {
