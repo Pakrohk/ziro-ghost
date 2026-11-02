@@ -227,3 +227,14 @@ autoload -Uz add-zsh-hook 2>/dev/null
 if (( ${+functions[add-zsh-hook]} )); then
   add-zsh-hook precmd ghost_history_append_last 2>/dev/null
 fi
+
+# ─── Intent Bus Handler (EVOID IOP M2) ───
+_ghost_suggest_history_handler() {
+  emulate -L zsh
+  local query="$1"
+  ghost_history_query "$query"
+}
+if (( ${+functions[_ghost_intent_subscribe]} )); then
+  _ghost_intent_subscribe ghost.suggest.query _ghost_suggest_history_handler
+fi
+

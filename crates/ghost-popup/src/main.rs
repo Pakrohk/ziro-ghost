@@ -1,42 +1,152 @@
 //! Focus Mode interactive TUI binary & Intent Bus dispatcher for Ghost v2.0.0.
 
 use ghost_protocol::{Intent, IntentResult};
-use std::io::{self, BufRead, Write};
+use std::env;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader, Write};
+use std::path::PathBuf;
+use std::time::SystemTime;
 
-fn handle_intent(intent: Intent) -> Option<IntentResult> {
-    if !intent.name.starts_with("ghost.popup.") {
-        return Some(IntentResult::error(
-            intent.id,
-            format!("unsubscribed intent namespace: {}", intent.name),
-        ));
+struct HistoryStore {
+    path: PathBuf,
+    last_mtime: Option<SystemTime>,
+    lines: Vec<String>,
+}
+
+impl HistoryStore {
+    fn new() -> Self {
+        let path = if let Ok(custom) = env::var("GHOST_CACHE_FILE") {
+            PathBuf::from(custom)
+        } else if let Ok(home) = env::var("HOME") {
+            let ziro_cache = PathBuf::from(&home).join(".cache/ziro/ghost/history-cache");
+            if ziro_cache.exists() {
+                ziro_cache
+            } else {
+                PathBuf::from(&home).join(".zsh_history")
+            }
+        } else {
+            PathBuf::from("/tmp/history-cache")
+        };
+
+        Self {
+            path,
+            last_mtime: None,
+            lines: Vec::new(),
+        }
     }
 
-    match intent.name.as_str() {
-        "ghost.popup.ping" => Some(IntentResult::ok(
+    fn refresh(&mut self) {
+        if let Ok(meta) = self.path.metadata() {
+            if let Ok(mtime) = meta.modified() {
+                if self.last_mtime == Some(mtime) && !self.lines.is_empty() {
+                    return;
+                }
+                self.last_mtime = Some(mtime);
+            }
+        } else {
+            return;
+        }
+
+        if let Ok(file) = File::open(&self.path) {
+            let reader = BufReader::new(file);
+            let mut new_lines = Vec::with_capacity(1024);
+            for line_res in reader.lines() {
+                if let Ok(l) = line_res {
+                    let trimmed = l.trim();
+                    if trimmed.is_empty() || trimmed.starts_with('#') {
+                        continue;
+                    }
+                    // Handle zsh extended_history format: : 1234567890:0;command
+                    let cmd = if trimmed.starts_with(':') {
+                        if let Some(idx) = trimmed.find(';') {
+                            trimmed[idx + 1..].trim()
+                        } else {
+                            trimmed
+                        }
+                    } else {
+                        trimmed
+                    };
+                    if !cmd.is_empty() && !new_lines.iter().any(|existing| existing == cmd) {
+                        new_lines.push(cmd.to_string());
+                    }
+                }
+            }
+            self.lines = new_lines;
+        }
+    }
+
+    fn find_match(&mut self, query: &str) -> Option<String> {
+        if query.is_empty() {
+            return None;
+        }
+        self.refresh();
+
+        // Search in reverse for most recent match
+        for line in self.lines.iter().rev() {
+            if line.starts_with(query) && line != query {
+                return Some(line.clone());
+            }
+        }
+        None
+    }
+}
+
+fn handle_intent(intent: Intent, history: &mut HistoryStore) -> Option<IntentResult> {
+    if intent.name.starts_with("ghost.popup.") {
+        match intent.name.as_str() {
+            "ghost.popup.ping" => Some(IntentResult::ok(
+                intent.id,
+                Some(serde_json::json!({
+                    "pong": true,
+                    "version": env!("CARGO_PKG_VERSION")
+                })),
+            )),
+            "ghost.popup.status" => Some(IntentResult::ok(
+                intent.id,
+                Some(serde_json::json!({
+                    "service": "ghost-popup",
+                    "status": "ready",
+                    "version": env!("CARGO_PKG_VERSION")
+                })),
+            )),
+            "ghost.popup.shutdown" | "ghost.popup.exit" => Some(IntentResult::ok(
+                intent.id,
+                Some(serde_json::json!({
+                    "shutdown": true
+                })),
+            )),
+            other => Some(IntentResult::error(
+                intent.id,
+                format!("action not implemented in M1/M2: {}", other),
+            )),
+        }
+    } else if intent.name == "ghost.suggest.query" {
+        let query = intent
+            .metadata
+            .get("query")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+
+        let matched = history.find_match(query);
+        let suggestions = if let Some(ref m) = matched {
+            vec![serde_json::json!(m)]
+        } else {
+            vec![]
+        };
+
+        Some(IntentResult::ok(
             intent.id,
             Some(serde_json::json!({
-                "pong": true,
-                "version": env!("CARGO_PKG_VERSION")
+                "query": query,
+                "suggestion": matched,
+                "suggestions": suggestions
             })),
-        )),
-        "ghost.popup.status" => Some(IntentResult::ok(
+        ))
+    } else {
+        Some(IntentResult::error(
             intent.id,
-            Some(serde_json::json!({
-                "service": "ghost-popup",
-                "status": "ready",
-                "version": env!("CARGO_PKG_VERSION")
-            })),
-        )),
-        "ghost.popup.shutdown" | "ghost.popup.exit" => Some(IntentResult::ok(
-            intent.id,
-            Some(serde_json::json!({
-                "shutdown": true
-            })),
-        )),
-        other => Some(IntentResult::error(
-            intent.id,
-            format!("action not implemented in M1: {}", other),
-        )),
+            format!("unsubscribed intent namespace: {}", intent.name),
+        ))
     }
 }
 
@@ -44,6 +154,7 @@ fn main() -> io::Result<()> {
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut out_handle = stdout.lock();
+    let mut history = HistoryStore::new();
 
     for line_result in stdin.lock().lines() {
         let line = match line_result {
@@ -62,7 +173,7 @@ fn main() -> io::Result<()> {
         let is_shutdown = match Intent::from_ndjson_line(trimmed) {
             Ok(intent) => {
                 let name = intent.name.clone();
-                if let Some(res) = handle_intent(intent) {
+                if let Some(res) = handle_intent(intent, &mut history) {
                     if let Ok(serialized) = res.to_ndjson_line() {
                         let _ = writeln!(out_handle, "{}", serialized);
                         let _ = out_handle.flush();

@@ -90,23 +90,61 @@ _ghost_boot() {
   bindkey '^[OC' _ghost_accept_widget 2>/dev/null || true
 }
 
-_ghost_line_pre_redraw() {
+_ghost_suggest_v107_fallback() {
   emulate -L zsh
-  local query="$BUFFER"
-  
-  # Clear previous
+  local query="${1:-$BUFFER}"
   _ghost_ui_inline_clear
-  
-  # Empty buffer — nothing to do
   [[ -z "$query" ]] && return 0
-  
-  # Compute suggestions
   _ghost_compute "$query"
   [[ ${#_ghost_results[@]} -eq 0 ]] && return 0
-  
-  # Render top suggestion
   _ghost_ui_inline_render "${_ghost_results[1]}"
 }
+
+_ghost_suggest_apply_response() {
+  emulate -L zsh
+  local resp="$1"
+  if [[ "$resp" =~ '"suggestion":"([^"]+)"' ]]; then
+    local suggestion="${match[1]}"
+    _ghost_ui_inline_render "$suggestion"
+    return 0
+  elif [[ "$resp" =~ '"suggestion":null' ]]; then
+    _ghost_ui_inline_clear
+    return 0
+  fi
+  return 1
+}
+
+_ghost_suggest() {
+  emulate -L zsh
+  local query="${1:-$BUFFER}"
+  _ghost_ui_inline_clear
+  [[ -z "$query" ]] && return 0
+
+  # Step a: Try Intent Bus if available
+  _ghost_bus_init 2>/dev/null
+  if (( _GHOST_BUS_AVAILABLE )); then
+    local q_esc="${query//\\/\\\\}"
+    q_esc="${q_esc//\"/\\\"}"
+    if _ghost_intent_publish "ghost.suggest.query" "ephemeral" "{\"query\":\"${q_esc}\"}"; then
+      if _ghost_suggest_apply_response "$_GHOST_BUS_LAST_RESPONSE"; then
+        return 0
+      fi
+    fi
+  fi
+
+  # Step c: Fallback to v1.0.7 in-memory logic
+  _ghost_suggest_v107_fallback "$query"
+}
+
+_ghost_line_pre_redraw() {
+  emulate -L zsh
+  _ghost_suggest "$BUFFER"
+}
+
+# Register handler for ghost.suggest.response if bus available
+if (( ${+functions[_ghost_intent_subscribe]} )); then
+  _ghost_intent_subscribe ghost.suggest.response _ghost_suggest_apply_response
+fi
 
 _ghost_compute() {
   emulate -L zsh
