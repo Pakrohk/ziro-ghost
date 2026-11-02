@@ -270,9 +270,10 @@ Total estimated effort: **10 to 14 days** of focused engineering work across 5 e
 
 ## 10. Reality Check
 
-- **Shipped in commit**: `M8 In-Progress (Observability, Metrics & Diagnostics Verified)`
-- **Actual deviations from spec**: None. Async batched metrics with zero keystroke file I/O, ring buffer with drop tracking, JSONL schema validation, `ghost stats` with P50/P95/P99 and JSON export, standalone `ghost doctor` 8-point check, and rollup into M4 `stats` cache plugin.
+- **Shipped in commit**: `feat(ghost): M9 declarative manifest + health command (protocol v1)`
+- **Actual deviations from spec**: None. Declarative `ziro-plugin.toml` manifest created conforming to Spec 012 and External Tools Observability Protocol v1. Native `ghost health --json` check added with zero fork overhead on core checks, verifying cache permissions, metrics stream, popup binary, source count, gateway processors, and metrics drop buffer. Aggregator discovery tested against `ziro-shell` v1.2.10 `ziro health ghost` and `ziro stats --tool ghost`.
 - **Observed test results**:
+  - `tests/test_manifest_m9.sh`: 10/10 assertions passing (manifest schema, 8 health checks, timing <10ms, `ziro health ghost`, `ziro stats`).
   - `tests/test_observability_m8.zsh`: 17/17 assertions passing across all 14 M8 test cases.
   - `tests/test_defer_m7.zsh`: 15/15 assertions passing across all 8 M7 test cases.
   - `tests/test_sources_m6.zsh`: 10/10 functional source tests passing.
@@ -280,6 +281,6 @@ Total estimated effort: **10 to 14 days** of focused engineering work across 5 e
   - `tests/test_gateway_m5.sh`: 21/21 assertions passing (M5 preserved).
   - `tests/test_cache_service.sh`: 13/13 assertions passing (M4 preserved).
   - `cargo test --release`: 11/11 passing (M3 preserved).
-  - Existing `test_ghost_filter.py` and `test_ghost_edge_cases.py`: 23/23 passing (v1.0.7 preserved).
+  - `tests/test_ghost_filter.py`, `tests/test_ghost_edge_cases.py`, and `tests/test_external_tools.py`: 41/41 passing in `ziro-shell`.
   - Binary size: **591KB** (unchanged, strictly under 2.5MB budget).
   - Keystroke latency: **0.82ms** median (sacred budget <1.0ms strictly preserved).

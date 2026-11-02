@@ -1,0 +1,98 @@
+# ziro-plugin.toml — ghost v2.0.0 declarative manifest
+# Per Spec 012 (Ziro Plugin Manifest Format) + ziro-shell v1.2.10 External Tools Protocol v1
+
+[plugin]
+name = "ghost"
+display_name = "Ziro Ghost"
+version = "2.0.0-M9"
+description = "Two-layer autosuggest plugin: Zsh ghost line + Rust focus mode popup"
+author = "Pakrohk"
+license = "MIT"
+homepage = "https://github.com/Pakrohk/ziro-ghost"
+repository = "https://github.com/Pakrohk/ziro-ghost"
+category = "auto_suggest"
+requires_zsh = ">=5.8"
+
+[entry]
+source = "ghost.plugin.zsh"
+
+[intents]
+# Intents this plugin PUBLISHES (produces)
+publishes = [
+  "ghost.suggest.query",
+  "ghost.suggest.response",
+  "ghost.popup.ping",
+  "ghost.popup.status",
+  "ghost.popup.focus_enter",
+  "ghost.popup.cycle_next",
+  "ghost.popup.accept",
+  "ghost.popup.cancel",
+  "ghost.cache.get",
+  "ghost.cache.put",
+  "ghost.cache.invalidate",
+  "ghost.cache.clear",
+]
+
+# Intents this plugin SUBSCRIBES to (consumes)
+subscribes = [
+  "ghost.suggest.query",
+  "ghost.cache.get",
+  "ghost.cache.put",
+  "ghost.cache.invalidate",
+  "ghost.cache.clear",
+]
+
+[sources]
+# Source names, priorities, gating
+history = { priority = 100, async = true }
+typo = { priority = 90, async = true }
+project = { priority = 70, async = true, refresh_on = "chpwd" }
+zoxide = { priority = 50, async = true, refresh_interval_seconds = 5 }
+
+[cache]
+# 6 cache types (M4)
+types = ["history", "project", "eval", "completions", "zoxide", "stats"]
+perms_files = "0600"
+perms_dirs = "0700"
+ttl_default_seconds = 3600
+
+[metrics]
+# Protocol v1: structured metrics for observability (M8)
+path = "~/.cache/ziro/ghost/metrics.jsonl"
+schema = ["ts", "intent_id", "name", "level", "duration_ms", "status", "source", "cache_hit", "session"]
+rotation_max_lines = 10000
+format = "jsonl"
+
+[health]
+# Protocol v1: health check (ziro-shell v1.2.10 reads this)
+# ziro-shell runs this command with 5s timeout, expects JSON output
+command = "ghost health --json"
+timeout_seconds = 5
+format = "json"
+
+[binaries]
+# M10 will populate actual binaries; here we declare expected platforms
+platforms = [
+  "linux-x86_64",
+  "linux-aarch64",
+  "darwin-x86_64",
+  "darwin-arm64",
+]
+install_path = "crates/ghost-popup/target/release/ghost-popup"
+size_budget_kb = 2500
+
+[dependencies]
+optional = ["ziro-defer"]
+required = ["zsh >= 5.8"]
+
+[requires_env]
+# Informational — checked by ziro-shell if plugin declares them
+zsh_version = ">=5.8"
+
+[mcp]
+# M10 will expose these via MCP endpoint /mcp
+tools = [
+  { name = "ghost.suggest", description = "Get autosuggest for a query" },
+  { name = "ghost.health", description = "Get plugin health status" },
+  { name = "ghost.stats", description = "Get aggregated metrics" },
+]

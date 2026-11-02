@@ -31,6 +31,7 @@ source "$GHOST_HOME/core/ghost-core.zsh"
 source "$GHOST_HOME/core/ghost-metrics.zsh"
 source "$GHOST_HOME/core/ghost-stats.zsh"
 source "$GHOST_HOME/core/ghost-doctor.zsh"
+source "$GHOST_HOME/core/ghost-health.zsh"
 
 ghost() {
   emulate -L zsh
@@ -46,11 +47,14 @@ ghost() {
     doctor)
       _ghost_doctor_cli "$@"
       ;;
+    health)
+      _ghost_health_cli "$@"
+      ;;
     suggest)
       _ghost_suggest "$@"
       ;;
     *)
-      print -r -- "Usage: ghost {cache|stats|doctor|suggest|popup}"
+      print -r -- "Usage: ghost {cache|stats|doctor|health|suggest|popup}"
       return 1
       ;;
   esac
