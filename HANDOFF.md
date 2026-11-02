@@ -29,21 +29,6 @@ Generated: 2026-10-16
 | **v1.0.2** | Minimal Ghost Line only (interim stable until v2.0.0) | ✅ released (this) |
 | **v2.0.0** | Two-Layer LSP-like Architecture (Ghost Line + Rust Focus Mode) | design package complete (ready for implementation) |
 
-## Architecture (v1.0.2 Minimal)
-- **Entry point**: `ghost.plugin.zsh` (Stage 0 lazy init on first keystroke)
-- **Core (`core/`)**:
-  - `ghost-version.zsh`: Single source of truth (`GHOST_VERSION="1.0.2"`)
-  - `ghost-config.zsh`: TOML configuration parser + defaults
-  - `ghost-registry.zsh`: Source registration API
-  - `ghost-core.zsh`: Line-pre-redraw orchestration + suggestion computation
-- **UI (`ui/`)**:
-  - `inline.ui.zsh`: Pure POSTDISPLAY + region_highlight suffix rendering
-- **Sources (`sources/`)**:
-  - `history.source.zsh`: Shell history suggestions (weight 40)
-  - `typo.source.zsh`: Fallback typo correction (weight 5)
-- **Lib (`lib/`)**:
-  - `ghost-color.zsh`: Dynamic color resolution (truecolor #6c6c6c, 256 color 240, ansi8 brightblack)
-
 ## Architecture
 - **Entry point**: `ghost.plugin.zsh` (standalone sourceable)
 - **Core (`core/`)**:
@@ -131,3 +116,16 @@ Generated: 2026-10-16
 
 ## Known Issues
 - None. All 29 test suites passing green; zero forks on hot-path verified.
+
+---
+
+## Architecture Decision Log (ADL)
+
+### ADL-001 — 2026-11-02 — Ghost v2.0.0 EVOID IOP Architecture & SDD Setup (Phase 0 & M1)
+- **Phase**: v2.0.0 (SDD-driven, IOP Architecture)
+- **Category**: architecture / core
+- **Spec**: 009-ziro-ghost-v2, 010-ghost-v2-implementation-plan
+- **Decision**: Adopt EVOID Intent-Oriented Programming (IOP) architecture. Gateway (`ziro` CLI) → Intent Bus (NDJSON stdio) → Decoupled module subscribers (`ghost.suggest.*`, `ghost.popup.*`, `ghost.cache.*`, `ghost.strategy.*`). Set up SDD workflow, conventions, ADR-001, and AGENTS.md.
+- **Rollback**: git revert to pre-v2.0.0 checkpoint.
+- **Status**: ACTIVE
+

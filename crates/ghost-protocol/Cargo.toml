@@ -1,0 +1,9 @@
+[package]
+name = "ghost-protocol"
+version = "2.0.0"
+edition = "2021"
+description = "Strongly-typed Intent and IntentResult NDJSON envelopes for Ghost v2.0.0"
+
+[dependencies]
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }

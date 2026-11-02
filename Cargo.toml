@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "crates/ghost-protocol",
+    "crates/ghost-popup",
+]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+strip = "symbols"
+panic = "abort"
+codegen-units = 1

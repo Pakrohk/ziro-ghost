@@ -1,0 +1,14 @@
+[package]
+name = "ghost-popup"
+version = "2.0.0"
+edition = "2021"
+description = "Focus Mode interactive TUI binary & Intent Bus dispatcher for Ghost v2.0.0"
+
+[[bin]]
+name = "ghost-popup"
+path = "src/main.rs"
+
+[dependencies]
+ghost-protocol = { path = "../ghost-protocol" }
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }

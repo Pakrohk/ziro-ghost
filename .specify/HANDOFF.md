@@ -116,3 +116,16 @@ Generated: 2026-10-16
 
 ## Known Issues
 - None. All 29 test suites passing green; zero forks on hot-path verified.
+
+---
+
+## Architecture Decision Log (ADL)
+
+### ADL-001 — 2026-11-02 — Ghost v2.0.0 EVOID IOP Architecture & SDD Setup (Phase 0 & M1)
+- **Phase**: v2.0.0 (SDD-driven, IOP Architecture)
+- **Category**: architecture / core
+- **Spec**: 009-ziro-ghost-v2, 010-ghost-v2-implementation-plan
+- **Decision**: Adopt EVOID Intent-Oriented Programming (IOP) architecture. Gateway (`ziro` CLI) → Intent Bus (NDJSON stdio) → Decoupled module subscribers (`ghost.suggest.*`, `ghost.popup.*`, `ghost.cache.*`, `ghost.strategy.*`). Set up SDD workflow, conventions, ADR-001, and AGENTS.md.
+- **Rollback**: git revert to pre-v2.0.0 checkpoint.
+- **Status**: ACTIVE
+

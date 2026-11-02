@@ -15,3 +15,10 @@ __pycache__/
 .cache/
 cache/
 *.log
+
+# Rust target
+target/
+
+# Serena IDE
+.serena/
+
