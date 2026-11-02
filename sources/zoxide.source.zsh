@@ -3,15 +3,22 @@
 # Layer: Sources · Spec: 010 (M6)
 
 typeset -g _GHOST_ZOXIDE_AVAILABLE=0
-if (( $+commands[zoxide] )); then
-  local zdb="${_ZO_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/zoxide}/db.zo"
-  [[ -f "$zdb" ]] && _GHOST_ZOXIDE_AVAILABLE=1
-fi
-
+typeset -g _GHOST_ZOXIDE_CHECKED=0
 typeset -g _GHOST_ZOXIDE_LAST_REFRESH=0
+
+_ghost_source_zoxide_check() {
+  emulate -L zsh
+  _GHOST_ZOXIDE_AVAILABLE=0
+  if (( $+commands[zoxide] )); then
+    local zdb="${_ZO_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/zoxide}/db.zo"
+    [[ -f "$zdb" ]] && _GHOST_ZOXIDE_AVAILABLE=1
+  fi
+  typeset -g _GHOST_ZOXIDE_CHECKED=1
+}
 
 _ghost_source_zoxide_refresh() {
   emulate -L zsh
+  (( _GHOST_ZOXIDE_CHECKED )) || _ghost_source_zoxide_check
   [[ $_GHOST_ZOXIDE_AVAILABLE -eq 1 ]] || return 0
   zmodload zsh/datetime 2>/dev/null || true
   local now=${EPOCHSECONDS:-$(date +%s)}

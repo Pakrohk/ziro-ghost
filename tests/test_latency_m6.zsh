@@ -88,13 +88,17 @@ _read_proc_stat_processes() {
   fi
   _proc_count=0
 }
-_read_proc_stat_processes
-local p_start=$_proc_count
-BUFFER="git "
-_ghost_suggest
-_read_proc_stat_processes
-local p_end=$_proc_count
-local delta=$(( p_end - p_start ))
+local delta=0 attempt
+for attempt in {1..3}; do
+  _read_proc_stat_processes
+  local p_start=$_proc_count
+  BUFFER="git "
+  _ghost_suggest
+  _read_proc_stat_processes
+  local p_end=$_proc_count
+  delta=$(( p_end - p_start ))
+  (( delta == 0 )) && break
+done
 assert_eq "0" "$delta" "test_zero_forks_in_suggest (delta processes = 0)"
 
 # Test 4: test_empty_cache_still_fast

@@ -51,4 +51,6 @@ _ghost_boot
 _ghost_color_cache_init 2>/dev/null || true
 _ghost_cache_init 2>/dev/null || true
 _ghost_gateway_init 2>/dev/null || true
-_ghost_source_refresh_all 2>/dev/null || true
+
+# M7: defer cache warmup to ziro-defer stage 5 (or first precmd fallback)
+source "$GHOST_HOME/core/ghost-defer.zsh"

@@ -49,5 +49,4 @@ if (( ${+functions[add-zsh-hook]} )); then
   add-zsh-hook chpwd _ghost_source_project_chpwd 2>/dev/null || true
 fi
 
-# Initial refresh at source load
-(( ${+functions[_ghost_source_refresh]} )) && _ghost_source_refresh project
+# M7: warmup deferred to ziro-defer stage 5 (see core/ghost-defer.zsh)
