@@ -76,7 +76,7 @@ _ghost_bus_init() {
   return 0
 }
 
-_ghost_intent_publish() {
+_ghost_intent_publish_raw() {
   emulate -L zsh
   local name="$1"
   local level="${2:-ephemeral}"
@@ -135,6 +135,37 @@ _ghost_intent_publish() {
   fi
 
   return 0
+}
+
+_ghost_intent_publish() {
+  emulate -L zsh
+  local name="$1"
+  local level="${2:-ephemeral}"
+  local meta="$3"
+  [[ -z "$meta" ]] && meta="{}"
+
+  # Gateway bypass check (for benchmarking or debugging)
+  if (( ${+ZIRO_GHOST_GATEWAY_BYPASS} )) && [[ "$ZIRO_GHOST_GATEWAY_BYPASS" == "1" ]]; then
+    _ghost_intent_publish_raw "$name" "$level" "$meta"
+    return $?
+  fi
+
+  # Route intent through gateway pipeline (zero-fork)
+  if (( ${+functions[_ghost_intent_process]} )); then
+    (( ++_ghost_intent_seq ))
+    local id="intent-${_ghost_intent_seq}-${EPOCHSECONDS:-0}"
+    local intent_json="{\"id\":\"${id}\",\"name\":\"${name}\",\"level\":\"${level}\",\"metadata\":${meta}}"
+    typeset -g _GHOST_INTENT_INTERNAL=1
+    if ! _ghost_intent_process "$intent_json"; then
+      typeset -g _GHOST_INTENT_INTERNAL=0
+      _GHOST_BUS_LAST_RESPONSE="$_GHOST_GATEWAY_ERROR"
+      return 1
+    fi
+    typeset -g _GHOST_INTENT_INTERNAL=0
+  fi
+
+  _ghost_intent_publish_raw "$name" "$level" "$meta"
+  return $?
 }
 
 _ghost_intent_subscribe() {

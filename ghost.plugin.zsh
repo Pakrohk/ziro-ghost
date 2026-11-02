@@ -16,6 +16,8 @@ source "$GHOST_HOME/core/ghost-version.zsh"
 source "$GHOST_HOME/core/ghost-config.zsh"
 source "$GHOST_HOME/core/ghost-kinds.zsh"
 source "$GHOST_HOME/core/ghost-bus.zsh"
+source "$GHOST_HOME/core/ghost-gateway.zsh"
+source "$GHOST_HOME/core/ghost-dependency.zsh"
 source "$GHOST_HOME/core/ghost-cache.zsh"
 source "$GHOST_HOME/core/ghost-registry.zsh"
 source "$GHOST_HOME/lib/ghost-color.zsh"
@@ -44,3 +46,4 @@ ghost() {
 
 _ghost_boot
 _ghost_cache_init 2>/dev/null || true
+_ghost_gateway_init 2>/dev/null || true
