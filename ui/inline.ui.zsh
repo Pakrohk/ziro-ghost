@@ -7,7 +7,16 @@ if ! (( ${+functions[_ghost_color_resolve_ghost]} )); then
   [[ -r "$_inline_dir/lib/ghost-color.zsh" ]] && source "$_inline_dir/lib/ghost-color.zsh"
 fi
 
-_GHOST_HIGHLIGHT_MARK=""
+typeset -g _GHOST_HIGHLIGHT_MARK=""
+typeset -g _GHOST_RESOLVED_COLOR=""
+
+_ghost_color_cache_init() {
+  emulate -L zsh
+  if (( ${+functions[_ghost_color_resolve_ghost]} )); then
+    _GHOST_RESOLVED_COLOR="$(_ghost_color_resolve_ghost)"
+  fi
+  [[ -z "$_GHOST_RESOLVED_COLOR" ]] && _GHOST_RESOLVED_COLOR="fg=8"
+}
 
 _ghost_ui_inline_render() {
   emulate -L zsh
@@ -30,12 +39,9 @@ _ghost_ui_inline_render() {
   # POSTDISPLAY
   POSTDISPLAY="$suffix"
 
-  # Color
-  local color=""
-  if (( ${+functions[_ghost_color_resolve_ghost]} )); then
-    color="$(_ghost_color_resolve_ghost)"
-  fi
-  [[ -z "$color" ]] && color="fg=8"
+  # Color (cached, zero fork)
+  [[ -z "$_GHOST_RESOLVED_COLOR" ]] && _ghost_color_cache_init
+  local color="$_GHOST_RESOLVED_COLOR"
 
   local start=$#BUFFER
   local end=$(( start + ${#POSTDISPLAY} ))

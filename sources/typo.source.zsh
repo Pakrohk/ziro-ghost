@@ -279,3 +279,28 @@ if (( ${+functions[ghost_register_source]} )); then
     --enabled true \
     --fallback-only
 fi
+
+# ─── M6: Async cache source (dictionary) ───
+typeset -ga _GHOST_TYPO_DICT=()
+
+_ghost_typo_list_all() {
+  emulate -L zsh
+  local -a items=()
+  local k
+  for k in "${(@k)_ghost_typo_static}"; do
+    items+=("${_ghost_typo_static[$k]}")
+  done
+  print -l -- "${(@u)items}"
+}
+
+_ghost_source_typo_refresh() {
+  emulate -L zsh
+  # Load typo dictionary if not loaded (one-time, at shell init)
+  if [[ ${#_GHOST_TYPO_DICT} -eq 0 ]]; then
+    _GHOST_TYPO_DICT=(${(f)"$(_ghost_typo_list_all 2>/dev/null)"})
+  fi
+  print -l -- "${_GHOST_TYPO_DICT[@]}"
+}
+if (( ${+functions[_ghost_source_register]} )); then
+  _ghost_source_register typo 90 _ghost_source_typo_refresh
+fi

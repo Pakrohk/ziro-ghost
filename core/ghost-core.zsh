@@ -204,20 +204,30 @@ _ghost_suggest() {
   _ghost_ui_inline_clear
   [[ -z "$query" ]] && return 0
 
-  # Step a: Try Intent Bus if available
-  _ghost_bus_init 2>/dev/null
-  if (( _GHOST_BUS_AVAILABLE )); then
+  # Optional gateway validate (0.05ms, safety check)
+  if (( ${+functions[_ghost_processor_validate]} )); then
     local q_esc="${query//\\/\\\\}"
     q_esc="${q_esc//\"/\\\"}"
-    if _ghost_intent_publish "ghost.suggest.query" "ephemeral" "{\"query\":\"${q_esc}\"}"; then
-      if _ghost_suggest_apply_response "$_GHOST_BUS_LAST_RESPONSE"; then
-        return 0
-      fi
+    local intent_json="{\"id\":\"suggest-$$\",\"name\":\"ghost.suggest.query\",\"level\":\"ephemeral\",\"metadata\":{\"query\":\"$q_esc\"}}"
+    typeset -g _GHOST_INTENT_INTERNAL=1
+    if ! _ghost_processor_validate "$intent_json"; then
+      typeset -g _GHOST_INTENT_INTERNAL=0
+      return 0
+    fi
+    typeset -g _GHOST_INTENT_INTERNAL=0
+  fi
+
+  # Pure cache dispatch (0 forks, zero subshell)
+  if (( ${+functions[_ghost_source_dispatch_sync]} )); then
+    _ghost_source_dispatch_sync "$query" 1
+    if (( ${#_ghost_results} > 0 )); then
+      _ghost_ui_inline_render "${_ghost_results[1]}"
+      return 0
     fi
   fi
 
-  # Step c: Fallback to v1.0.7 in-memory logic
-  _ghost_suggest_v107_fallback "$query"
+  POSTDISPLAY=''
+  return 0
 }
 
 _ghost_line_pre_redraw() {

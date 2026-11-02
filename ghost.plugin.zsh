@@ -19,11 +19,14 @@ source "$GHOST_HOME/core/ghost-bus.zsh"
 source "$GHOST_HOME/core/ghost-gateway.zsh"
 source "$GHOST_HOME/core/ghost-dependency.zsh"
 source "$GHOST_HOME/core/ghost-cache.zsh"
+source "$GHOST_HOME/core/ghost-source-registry.zsh"
 source "$GHOST_HOME/core/ghost-registry.zsh"
 source "$GHOST_HOME/lib/ghost-color.zsh"
 source "$GHOST_HOME/ui/inline.ui.zsh"
 source "$GHOST_HOME/sources/history.source.zsh"
 source "$GHOST_HOME/sources/typo.source.zsh"
+source "$GHOST_HOME/sources/project.source.zsh"
+source "$GHOST_HOME/sources/zoxide.source.zsh"
 source "$GHOST_HOME/core/ghost-core.zsh"
 
 ghost() {
@@ -45,5 +48,7 @@ ghost() {
 }
 
 _ghost_boot
+_ghost_color_cache_init 2>/dev/null || true
 _ghost_cache_init 2>/dev/null || true
 _ghost_gateway_init 2>/dev/null || true
+_ghost_source_refresh_all 2>/dev/null || true

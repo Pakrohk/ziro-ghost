@@ -238,3 +238,26 @@ if (( ${+functions[_ghost_intent_subscribe]} )); then
   _ghost_intent_subscribe ghost.suggest.query _ghost_suggest_history_handler
 fi
 
+# ─── M6: Async cache source ───
+_ghost_source_history_refresh() {
+  emulate -L zsh
+  # Load from disk via v1.0.7 (uses mtime check, in-memory after first load)
+  [[ ${#_ghost_history_cache} -eq 0 ]] && ghost_history_load 2>/dev/null
+  # Return entire cache, newline-joined — dispatcher will filter
+  [[ ${#_ghost_history_cache} -eq 0 ]] && return 0
+  print -l -- "${_ghost_history_cache[@]}"
+}
+if (( ${+functions[_ghost_source_register]} )); then
+  _ghost_source_register history 100 _ghost_source_history_refresh
+fi
+
+# Hook into precmd to keep cache fresh (v1.0.7 append_last is called elsewhere — this ensures new commands land)
+_ghost_source_history_precmd() {
+  emulate -L zsh
+  (( ${+functions[_ghost_source_refresh]} )) && _ghost_source_refresh history
+}
+autoload -Uz add-zsh-hook 2>/dev/null
+if (( ${+functions[add-zsh-hook]} )); then
+  add-zsh-hook precmd _ghost_source_history_precmd 2>/dev/null || true
+fi
+
