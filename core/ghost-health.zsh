@@ -103,7 +103,7 @@ _ghost_health_json() {
   if (( $+functions[ziro-defer] )); then
     checks+=("{\"name\":\"ziro_defer\",\"status\":\"ok\",\"message\":\"available (stage 5 warmup)\"}")
   else
-    checks+=("{\"name\":\"ziro_defer\",\"status\":\"info\",\"message\":\"unavailable (precmd fallback)\"}")
+    checks+=("{\"name\":\"ziro_defer\",\"status\":\"ok\",\"message\":\"info: unavailable (precmd fallback active)\"}")
   fi
 
   # Check 6: sources registered

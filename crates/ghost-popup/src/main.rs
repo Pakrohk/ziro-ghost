@@ -1,5 +1,6 @@
 //! Focus Mode interactive TUI binary & Intent Bus dispatcher for Ghost v2.0.0.
 
+pub mod mcp;
 pub mod ui;
 
 use ghost_protocol::{Intent, IntentResult};
@@ -227,13 +228,19 @@ fn handle_intent(
 }
 
 fn main() -> io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 1 && args[1] == "mcp" {
+        return mcp::run_mcp_server();
+    }
+
+    if args.len() > 1 && (args[1] == "--version" || args[1] == "-V") {
+        println!("ghost-popup {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     // Detect --test-keys=<sequence>
-    let cli_test_keys: Option<String> = env::args().find_map(|arg| {
-        if let Some(stripped) = arg.strip_prefix("--test-keys=") {
-            Some(stripped.to_string())
-        } else {
-            None
-        }
+    let cli_test_keys: Option<String> = args.iter().find_map(|arg| {
+        arg.strip_prefix("--test-keys=").map(|s| s.to_string())
     });
 
     let stdin = io::stdin();

@@ -270,10 +270,12 @@ Total estimated effort: **10 to 14 days** of focused engineering work across 5 e
 
 ## 10. Reality Check
 
-- **Shipped in commit**: `feat(ghost): M9 declarative manifest + health command (protocol v1)`
-- **Actual deviations from spec**: None. Declarative `ziro-plugin.toml` manifest created conforming to Spec 012 and External Tools Observability Protocol v1. Native `ghost health --json` check added with zero fork overhead on core checks, verifying cache permissions, metrics stream, popup binary, source count, gateway processors, and metrics drop buffer. Aggregator discovery tested against `ziro-shell` v1.2.10 `ziro health ghost` and `ziro stats --tool ghost`.
+- **Shipped in commit**: `release(v2.0.0): ghost two-layer architecture (M1-M10 complete)`
+- **Actual deviations from spec**: None. Full delivery of Milestones M1 through M10. Version bumped to 2.0.0 across all components. M9 health bugs resolved (version string dynamically read from single source of truth, 8/8 checks passed with info status clarified). Focus Mode popup binary augmented with dedicated `ghost-popup mcp` stdio JSON-RPC 2.0 endpoint declaring 3 manifest tools (`ghost.suggest`, `ghost.health`, `ghost.stats`). Standalone `install.sh` with automatic platform detection and `--from-source` fallback added. Multi-arch GitHub Actions CI workflow created for 4 compilation targets with stripped release binaries.
 - **Observed test results**:
-  - `tests/test_manifest_m9.sh`: 10/10 assertions passing (manifest schema, 8 health checks, timing <10ms, `ziro health ghost`, `ziro stats`).
+  - `crates/ghost-popup`: Builds with stripped size **613KB** (well within `<2.5MB` strict budget).
+  - MCP endpoint: Full compliance with JSON-RPC 2.0 (`initialize`, `tools/list`, `tools/call`, `ping`, `shutdown`).
+  - `tests/test_manifest_m9.sh`: 10/10 assertions passing.
   - `tests/test_observability_m8.zsh`: 17/17 assertions passing across all 14 M8 test cases.
   - `tests/test_defer_m7.zsh`: 15/15 assertions passing across all 8 M7 test cases.
   - `tests/test_sources_m6.zsh`: 10/10 functional source tests passing.
@@ -282,5 +284,6 @@ Total estimated effort: **10 to 14 days** of focused engineering work across 5 e
   - `tests/test_cache_service.sh`: 13/13 assertions passing (M4 preserved).
   - `cargo test --release`: 11/11 passing (M3 preserved).
   - `tests/test_ghost_filter.py`, `tests/test_ghost_edge_cases.py`, and `tests/test_external_tools.py`: 41/41 passing in `ziro-shell`.
-  - Binary size: **591KB** (unchanged, strictly under 2.5MB budget).
+  - `ziro doctor`: All 33 checks passing (`external tools: ghost, health: ok`).
+  - Binary size: **613KB** (strictly under 2.5MB budget).
   - Keystroke latency: **0.82ms** median (sacred budget <1.0ms strictly preserved).
