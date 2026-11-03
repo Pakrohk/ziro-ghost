@@ -3,7 +3,7 @@
 # Installs prebuilt ghost-popup binary or compiles from source.
 set -euo pipefail
 
-VERSION="2.0.0"
+VERSION="2.0.1"
 REPO="Pakrohk/ziro-ghost"
 PREFIX="${PREFIX:-$HOME/.local}"
 FROM_SOURCE=0

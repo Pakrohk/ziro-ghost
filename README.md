@@ -1,8 +1,8 @@
 # ziro-ghost 👻
 
-> **Ghost v2.0.0**: Two-layer autosuggest architecture following EVOID Intent-Oriented Programming (IOP). Instant inline ghost text (`POSTDISPLAY`) + Rust interactive focus mode popup overlay (`ghost-popup`).
+> **Ghost v2.0.1**: Two-layer autosuggest architecture following EVOID Intent-Oriented Programming (IOP). Instant inline ghost text (`POSTDISPLAY`) + Rust interactive focus mode popup overlay (`ghost-popup`).
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Pakrohk/ziro-ghost/releases/tag/v2.0.0)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/Pakrohk/ziro-ghost/releases/tag/v2.0.1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---

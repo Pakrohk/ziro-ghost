@@ -2,6 +2,23 @@
 
 All notable changes to `ziro-ghost` are documented here.
 
+## [2.0.1] — 2026-11-03 — Intel Mac (darwin-x86_64) Binary Support
+
+### Added
+- **Multi-Arch Release**: Added precompiled `ghost-popup-darwin-x86_64` binary via macOS 14 cross-compilation (`rustup target add x86_64-apple-darwin`).
+- All 4 major platforms now officially supported with prebuilt binaries: `linux-x86_64`, `linux-aarch64`, `darwin-x86_64`, `darwin-arm64`.
+
+## [2.0.0] — 2026-11-03 — Two-Layer Autosuggest Architecture (EVOID IOP)
+
+### Added
+- **Intent Bus**: Core modules communicate via structured Intent envelopes (`ghost_protocol`) over stdio NDJSON streams.
+- **Rust Focus Mode**: Dedicated interactive TUI popup binary (`ghost-popup`) with Ratatui and Tachyonfx.
+- **Zero Input Lag**: Suggest hot-path latency strictly `<1.0ms` median with zero forks.
+- **6 Cache Types**: Asynchronous caching for `history`, `project`, `eval`, `completions`, `zoxide`, and `stats`.
+- **Declarative Manifest (`ziro-plugin.toml`)**: Conforms to Spec 012 and Protocol v1 health integration.
+- **MCP Endpoint**: `ghost-popup mcp` speaks JSON-RPC 2.0 over stdio for AI agent discovery and interaction.
+- **Observability**: Metrics stream (`metrics.jsonl`), `ghost stats` CLI with P50/P95/P99 latency calculations, and `ghost health` diagnostic checks.
+
 ## [1.0.7] — 2026-11-01 — Security Hardening: Extended Secret Pattern Matching
 
 ### Security

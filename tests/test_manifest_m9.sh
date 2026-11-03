@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# ziro-ghost v2.0.0 — M9 Declarative Manifest & Health Command Tests
+# ziro-ghost v2.0.1 — M9 Declarative Manifest & Health Command Tests
 # Tests 10 behaviors:
 # 1. test_manifest_valid_toml — python tomllib parses ziro-plugin.toml
 # 2. test_manifest_has_required_sections — [plugin], [entry], [intents], [health]

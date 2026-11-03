@@ -1,6 +1,6 @@
 [package]
 name = "ghost-protocol"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 description = "Strongly-typed Intent and IntentResult NDJSON envelopes for Ghost v2.0.0"
 

@@ -4,7 +4,7 @@
 [plugin]
 name = "ghost"
 display_name = "Ziro Ghost"
-version = "2.0.0"
+version = "2.0.1"
 description = "Two-layer autosuggest plugin: Zsh ghost line + Rust focus mode popup"
 author = "Pakrohk"
 license = "MIT"

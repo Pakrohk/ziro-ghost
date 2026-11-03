@@ -1,4 +1,4 @@
-# Ghost v2.0.0 — Two-Layer Autosuggest Architecture
+# Ghost v2.0.1 — Two-Layer Autosuggest Architecture
 
 **Ghost is now a plugin runtime, not just a plugin.** Built on Intent-Oriented Programming (IOP) — the same architectural paradigm as the Evoid reference runtime.
 
@@ -49,7 +49,7 @@ ziro plugin add Pakrohk/ziro-ghost
 
 ### Standalone (One-Liner)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Pakrohk/ziro-ghost/v2.0.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Pakrohk/ziro-ghost/v2.0.1/install.sh | bash
 ```
 
 Add to your `~/.zshrc`:
