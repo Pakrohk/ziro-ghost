@@ -4,19 +4,19 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::io::{self, stdout, Stdout};
+use std::io::{self, stderr, Stderr};
 use std::panic;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static TERMINAL_RAW: AtomicBool = AtomicBool::new(false);
 
 pub struct TerminalGuard {
-    _stdout: Stdout,
+    _stderr: Stderr,
 }
 
 impl TerminalGuard {
     pub fn new() -> io::Result<Self> {
-        let mut out = stdout();
+        let mut out = stderr();
         enable_raw_mode()?;
         TERMINAL_RAW.store(true, Ordering::SeqCst);
 
@@ -24,7 +24,7 @@ impl TerminalGuard {
         let default_panic = panic::take_hook();
         panic::set_hook(Box::new(move |panic_info| {
             let _ = disable_raw_mode();
-            let mut out = io::stdout();
+            let mut out = io::stderr();
             let _ = execute!(out, Show, LeaveAlternateScreen);
             TERMINAL_RAW.store(false, Ordering::SeqCst);
             default_panic(panic_info);
@@ -36,13 +36,13 @@ impl TerminalGuard {
             return Err(e);
         }
 
-        Ok(Self { _stdout: out })
+        Ok(Self { _stderr: out })
     }
 }
 
 impl Drop for TerminalGuard {
     fn drop(&mut self) {
-        let _ = execute!(self._stdout, Show, LeaveAlternateScreen);
+        let _ = execute!(self._stderr, Show, LeaveAlternateScreen);
         let _ = disable_raw_mode();
         TERMINAL_RAW.store(false, Ordering::SeqCst);
     }

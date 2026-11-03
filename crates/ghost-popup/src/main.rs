@@ -98,7 +98,8 @@ impl HistoryStore {
 
 fn run_interactive_focus(items: Vec<String>) -> io::Result<Option<String>> {
     let guard = TerminalGuard::new()?;
-    let mut terminal = ratatui::init();
+    let backend = ratatui::backend::CrosstermBackend::new(io::stderr());
+    let mut terminal = ratatui::Terminal::new(backend)?;
     let mut app = FocusApp::new(items);
 
     let result = loop {
@@ -114,7 +115,6 @@ fn run_interactive_focus(items: Vec<String>) -> io::Result<Option<String>> {
     };
 
     drop(guard);
-    ratatui::restore();
     Ok(result)
 }
 
@@ -233,6 +233,7 @@ fn main() -> io::Result<()> {
         return mcp::run_mcp_server();
     }
 
+
     if args.len() > 1 && (args[1] == "--version" || args[1] == "-V") {
         println!("ghost-popup {}", env!("CARGO_PKG_VERSION"));
         return Ok(());
@@ -242,6 +243,28 @@ fn main() -> io::Result<()> {
     let cli_test_keys: Option<String> = args.iter().find_map(|arg| {
         arg.strip_prefix("--test-keys=").map(|s| s.to_string())
     });
+
+    if args.len() > 1 && args[1] == "focus" {
+        let items: Vec<String> = args[2..]
+            .iter()
+            .filter(|a| !a.starts_with("--test-keys="))
+            .cloned()
+            .collect();
+        if items.is_empty() {
+            return Ok(());
+        }
+        if let Some(keys) = cli_test_keys.as_deref() {
+            let mut app = FocusApp::new(items);
+            if let Some(Some(selected)) = app.apply_key_sequence(keys) {
+                println!("{}", selected);
+            }
+        } else {
+            if let Ok(Some(selected)) = run_interactive_focus(items) {
+                println!("{}", selected);
+            }
+        }
+        return Ok(());
+    }
 
     let stdin = io::stdin();
     let stdout = io::stdout();
